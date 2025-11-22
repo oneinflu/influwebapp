@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Base URL for the API
-const baseURL = 'https://api.oneinflu.com/api';
+const baseURL = 'https://influ-backend-apis-l4r3h.ondigitalocean.app/api';
 
 // Keys for storage
 const LS_KEY = 'auth_token';

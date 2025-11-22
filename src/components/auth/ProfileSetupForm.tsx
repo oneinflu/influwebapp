@@ -152,7 +152,7 @@ export default function ProfileSetupForm() {
                   label="Date of Birth"
                   placeholder="YYYY-MM-DD"
                   defaultDate={dob || undefined}
-                  onChange={(selectedDates, dateStr) => {
+                  onChange={(_selectedDates, dateStr) => {
                     setDob(dateStr);
                   }}
                 />

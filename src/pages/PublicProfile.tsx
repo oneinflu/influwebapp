@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import Alert from "../components/ui/alert/Alert";
 import api from "../utils/api";
@@ -88,15 +88,7 @@ export default function PublicProfile() {
     }
     return items;
   }, [data]);
-  // Ensure hooks are declared before any early returns
-  const servicesCarouselRef = useRef<HTMLDivElement | null>(null);
-  const scrollServices = (dir: 'left' | 'right') => {
-    const el = servicesCarouselRef.current;
-    if (!el) return;
-    const amount = Math.round(el.clientWidth * 0.9);
-    el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
-  };
-
+ 
   if (loading) {
     return <div className="p-6 text-gray-600 dark:text-gray-400">Loading profile...</div>;
   }
@@ -107,7 +99,7 @@ export default function PublicProfile() {
     return <div className="p-6 text-gray-600 dark:text-gray-400">Profile not found</div>;
   }
 
-  const { user, coverPhoto, services, clients, projects, testimonials, showcaseMedia } = data;
+  const { user, coverPhoto, services, clients, testimonials, showcaseMedia } = data;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0B101A]">

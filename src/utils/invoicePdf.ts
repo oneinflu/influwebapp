@@ -142,7 +142,7 @@ async function loadSvgAsPngDataUrl(svgUrl: string, tintRGB?: [number, number, nu
 
 export async function generateInvoicePdf(
   invoice: InvoiceLike | null,
-  payments: PaymentLike[],
+  _payments: PaymentLike[],
   opts?: { raisedByName?: string; businessName?: string; billedToName?: string; billedBy?: PartyInfo; billedTo?: PartyInfo; items?: ItemLike[]; footerLogoUrl?: string; footerText?: string; footerLinkUrl?: string }
 ): Promise<void> {
   const inv = invoice || {};

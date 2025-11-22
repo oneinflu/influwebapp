@@ -1,12 +1,12 @@
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Alert from "../ui/alert/Alert";
 import { useAuth } from "../../context/AuthContext";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 
 export default function SignUpForm() {
   const [isChecked, setIsChecked] = useState(false);

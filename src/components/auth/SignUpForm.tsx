@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Alert from "../ui/alert/Alert";
 import { useAuth } from "../../context/AuthContext";
+import { useState } from "preact/hooks";
 
 export default function SignUpForm() {
   const [isChecked, setIsChecked] = useState(false);
@@ -24,13 +25,14 @@ export default function SignUpForm() {
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
-        <Link
-          to="https://oneinflu.com/"
+        <a
+          href="https://oneinflu.com"
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          rel="noopener noreferrer"
         >
           <ChevronLeftIcon className="size-5" />
           Back to dashboard
-        </Link>
+        </a>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>

@@ -46,6 +46,7 @@ export default function Invoices() {
   const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
+  const [clientMap, setClientMap] = useState<Record<string, string>>({});
 
   async function downloadInvoicePdf(id: string) {
     try {
@@ -127,8 +128,16 @@ export default function Invoices() {
       if (paymentStatus) params.payment_status = paymentStatus;
       if (from) params.from = from;
       if (to) params.to = to;
-      const { data } = await api.get("/invoices", { params });
-      setItems(Array.isArray(data) ? data : []);
+      const [{ data: invData }, { data: clientsResp }] = await Promise.all([
+        api.get("/invoices", { params }),
+        api.get("/clients", { params: { user_id: ownerId } }),
+      ]);
+      setItems(Array.isArray(invData) ? invData : []);
+      const cmap: Record<string, string> = {};
+      (Array.isArray(clientsResp) ? clientsResp : []).forEach((c: any) => {
+        if (c && c._id) cmap[String(c._id)] = String(c.business_name || c._id);
+      });
+      setClientMap(cmap);
     } catch (err) {
       const message = ((): string => {
         if (err && typeof err === "object") {
@@ -267,27 +276,24 @@ export default function Invoices() {
                       <TableCell>{""}</TableCell>
                     </TableRow>
                   ) : (
-                    items.map((inv) => (
-                      <TableRow key={inv._id}>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start">
-                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">{inv.invoice_number}</span>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{inv.client}</TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{formatDate(inv.issue_date)}</TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{formatDate(inv.due_date)}</TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{typeof inv.subtotal === "number" ? inv.subtotal.toFixed(2) : "0.00"}</TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{typeof inv.tax_percentage === "number" ? inv.tax_percentage.toFixed(2) : "0.00"}</TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{typeof inv.total === "number" ? inv.total.toFixed(2) : "0.00"}</TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{inv.currency || "INR"}</TableCell>
+                      items.map((inv) => (
+                        <TableRow key={inv._id}>
+                          <TableCell className="px-5 py-4 sm:px-6 text-start">
+                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">{(inv as any).invoiceNo || (inv as any).invoice_number}</span>
+                          </TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(() => { const cid = (inv as any).client || (inv as any).clientId; return clientMap[cid] || cid; })()}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{formatDate((inv as any).issue_date || (inv as any).issuedAt)}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{formatDate((inv as any).due_date || (inv as any).dueDate)}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(() => { const sub = (inv as any).subtotal ?? (inv as any).subTotal; return typeof sub === "number" ? sub.toFixed(2) : "0.00"; })()}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(() => { const pct = (inv as any).tax_percentage ?? ((Array.isArray((inv as any).taxes) && (inv as any).taxes[0]?.ratePercent) || undefined); return typeof pct === "number" ? pct.toFixed(2) : "0.00"; })()}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(() => { const tt = (inv as any).total ?? (inv as any).total_amount; return typeof tt === "number" ? tt.toFixed(2) : "0.00"; })()}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(inv as any).currency || "INR"}</TableCell>
                         <TableCell className="px-4 py-3 text-start">
                           {(() => {
-                            const status = (inv.payment_status || "pending") as NonNullable<InvoiceItem["payment_status"]>;
-                            const label = status.replace(/_/g, " ");
-                            const color =
-                              status === "paid" ? "success" :
-                              status === "cancelled" ? "error" :
-                              status === "overdue" ? "warning" :
-                              "info";
+                            const rawStatus = ((inv as any).payment_status || (inv as any).status || "pending").toString();
+                            const label = rawStatus.replace(/_/g, " ");
+                            const s = rawStatus.toLowerCase();
+                            const color = s === "paid" ? "success" : s === "cancelled" ? "error" : s === "overdue" ? "warning" : "info";
                             return <Badge variant="light" size="sm" color={color as any}>{label}</Badge>;
                           })()}
                         </TableCell>

@@ -1,3 +1,4 @@
+/* eslint-disable no-empty */
 import { useEffect, useMemo, useState } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ComponentCard from "../components/common/ComponentCard";
@@ -22,6 +23,9 @@ interface LeadItem {
   phone?: string;
   budget?: number;
   status?: string;
+  website?: string;
+  assigned_to?: string;
+  looking_for?: string[];
 }
 
 // Typed error-to-message helper to avoid explicit `any`
@@ -52,6 +56,8 @@ export default function Leads() {
   const [saving, setSaving] = useState(false);
   const [converting, setConverting] = useState(false);
   const [editForm, setEditForm] = useState<Partial<LeadItem>>({});
+  const [services, setServices] = useState<{ _id: string; name: string }[]>([]);
+  const [team, setTeam] = useState<{ _id: string; name: string }[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +90,28 @@ export default function Leads() {
     return () => { cancelled = true; };
   }, [ownerId, q]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadLists() {
+      if (!ownerId) return;
+      try {
+        const [{ data: svc }, { data: tm }] = await Promise.all([
+          api.get("/services", { params: { user_id: ownerId } }),
+          api.get("/team-members", { params: { managed_by: ownerId } }),
+        ]);
+        if (!cancelled) {
+          const svcArr: Array<{ _id: string; name?: string }> = Array.isArray(svc) ? (svc as Array<{ _id: string; name?: string }>) : [];
+          setServices(svcArr.map((s) => ({ _id: s._id, name: s.name || s._id })));
+          const tmArr: Array<{ _id: string; name?: string }> = Array.isArray(tm) ? (tm as Array<{ _id: string; name?: string }>) : [];
+          setTeam(tmArr.map((t) => ({ _id: t._id, name: t.name || t._id })));
+        }
+      } catch {
+      }
+    }
+    loadLists();
+    return () => { cancelled = true; };
+  }, [ownerId]);
+
   const STATUS = [
     "all",
     "new_lead",
@@ -115,6 +143,9 @@ export default function Leads() {
       phone: l.phone,
       budget: l.budget,
       status: l.status || "new_lead",
+      website: l.website,
+      assigned_to: l.assigned_to,
+      looking_for: Array.isArray(l.looking_for) ? l.looking_for : [],
     });
     setEditOpen(true);
   }
@@ -249,7 +280,7 @@ export default function Leads() {
                         </TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{l.email || "—"}</TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{l.phone || "—"}</TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{typeof l.budget === 'number' ? l.budget : "—"}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{typeof l.budget === 'number' ? `₹ ${l.budget.toLocaleString()}` : "—"}</TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(l.status || "new_lead").replace(/_/g, " ")}</TableCell>
                         <TableCell className="px-4 py-3 text-start">
                           <div className="flex items-center gap-2">
@@ -299,7 +330,7 @@ export default function Leads() {
                   )}
                   <div className="grid grid-cols-2 gap-2">
                     <div className="text-sm">Status: <span className="font-medium">{(selected.status || "new_lead").replace(/_/g, " ")}</span></div>
-                    <div className="text-sm">Budget: <span className="font-medium">{typeof selected.budget === 'number' ? selected.budget : "—"}</span></div>
+                    <div className="text-sm">Budget: <span className="font-medium">{typeof selected.budget === 'number' ? `₹ ${selected.budget.toLocaleString()}` : "—"}</span></div>
                   </div>
                 </div>
               ) : null}
@@ -327,6 +358,10 @@ export default function Leads() {
                   <InputField value={editForm.phone || ""} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} />
                 </div>
                 <div>
+                  <Label>Website</Label>
+                  <InputField value={editForm.website || ""} onChange={(e) => setEditForm((f) => ({ ...f, website: e.target.value }))} />
+                </div>
+                <div>
                   <Label>Budget</Label>
                   <InputField type="number" value={typeof editForm.budget === 'number' ? String(editForm.budget) : ""} onChange={(e) => setEditForm((f) => ({ ...f, budget: Number(e.target.value) }))} />
                 </div>
@@ -337,6 +372,31 @@ export default function Leads() {
                     options={["new_lead","contacted","qualified","proposal_sent","won","lost","closed"].map((s) => ({ label: s.replace(/_/g, " "), value: s }))}
                     onChange={(val) => setEditForm((f) => ({ ...f, status: String(val) }))}
                   />
+                </div>
+                <div>
+                  <Label>Assigned To</Label>
+                  <Select
+                    options={[{ value: "", label: "None" }, ...team.map((t) => ({ value: t._id, label: t.name }))]}
+                    defaultValue={String(editForm.assigned_to || "")}
+                    onChange={(v) => setEditForm((f) => ({ ...f, assigned_to: String(v) }))}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Looking For Services</Label>
+                  <Select
+                    options={services.map((s) => ({ value: s._id, label: s.name }))}
+                    defaultValue={""}
+                    onChange={(v) => {
+                      const val = String(v);
+                      setEditForm((f) => {
+                        const prev = Array.isArray(f.looking_for) ? f.looking_for : [];
+                        return { ...f, looking_for: prev.includes(val) ? prev : [...prev, val] };
+                      });
+                    }}
+                  />
+                  {Array.isArray(editForm.looking_for) && editForm.looking_for.length > 0 && (
+                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">Selected: {editForm.looking_for.length}</div>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">

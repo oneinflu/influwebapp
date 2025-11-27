@@ -50,8 +50,13 @@ const navItems: NavItem[] = [
   },
   {
     icon: <PlugInIcon />,
-    name: "Services & Rates",
+    name: "Services",
     path: "/services",
+  },
+  {
+    icon: <PlugInIcon />,
+    name: "Rate Cards",
+    path: "/rate-cards",
   },
  
   {

@@ -50,6 +50,8 @@ import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import ProfileSetup from "./pages/AuthPages/ProfileSetup";
 import BusinessInfo from "./pages/AuthPages/BusinessInfo";
+import RateCards from "./pages/RateCards";
+import RateCardsNew from "./pages/RateCardsNew";
 
 export default function App() {
   return (
@@ -107,6 +109,10 @@ export default function App() {
               <Route path="/buttons" element={<Buttons />} />
               <Route path="/images" element={<Images />} />
               <Route path="/videos" element={<Videos />} />
+              <Route path="/rate-cards" element={<RateCards />} />
+              <Route path="/rate-cards/new" element={<RateCardsNew />} />
+
+
 
               {/* Charts */}
               <Route path="/line-chart" element={<LineChart />} />

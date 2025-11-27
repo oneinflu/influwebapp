@@ -17,29 +17,22 @@ import TextArea from "../components/form/input/TextArea";
 import Select from "../components/form/Select";
 import Checkbox from "../components/form/input/Checkbox";
 import DeleteConfirm from "../components/ui/confirm/DeleteConfirm";
-import { InfoIcon, PencilIcon, TrashBinIcon } from "../icons";
-
-type PricingPlan = {
-  currency?: "INR" | "USD" | "EUR" | "GBP" | string;
-  is_price_range?: boolean;
-  amount?: number;
-  percentage?: number;
-  range?: { min?: number; max?: number };
-  pre_discounted_rate?: number;
-  plan_type?: "per_project" | "per_post" | "per_month" | "retainer" | "hourly" | string;
-  notes?: string;
-};
+import { InfoIcon, PencilIcon, TrashBinIcon, FileIcon, ShootingStarIcon } from "../icons";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../components/ui/table";
+import Badge from "../components/ui/badge/Badge";
+import TagInput from "../components/form/input/TagInput";
 
 interface ServiceItem {
   _id: string;
   name: string;
+  category?: string;
   description?: string;
-  deliverables?: string[];
-  is_contact_for_pricing?: boolean;
-  is_barter?: boolean;
-  is_negotiable?: boolean;
-  status?: string;
-  pricing_plans?: PricingPlan[];
+  unit?: string;
+  defaultDeliverables?: string[];
+  tags?: string[];
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function Services() {
@@ -56,6 +49,8 @@ export default function Services() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editForm, setEditForm] = useState<Partial<ServiceItem>>({});
+  const [expandedDeliverables, setExpandedDeliverables] = useState<Record<string, boolean>>({});
+  const [expandedTags, setExpandedTags] = useState<Record<string, boolean>>({});
 
   function handleViewService(s: ServiceItem) {
     setSelected(s);
@@ -67,13 +62,12 @@ export default function Services() {
     setEditForm({
       _id: s._id,
       name: s.name,
+      category: (s as any).category,
       description: s.description,
-      status: s.status,
-      deliverables: s.deliverables,
-      is_contact_for_pricing: s.is_contact_for_pricing,
-      is_barter: s.is_barter,
-      is_negotiable: s.is_negotiable,
-      pricing_plans: s.pricing_plans ?? [],
+      unit: (s as any).unit,
+      defaultDeliverables: (s as any).defaultDeliverables || [],
+      tags: (s as any).tags || [],
+      isActive: (s as any).isActive ?? true,
     });
     setEditOpen(true);
   }
@@ -82,7 +76,16 @@ export default function Services() {
     if (!editForm || !editForm._id) return;
     setSaving(true);
     try {
-      const { data } = await api.put(`/services/${editForm._id}`, { ...editForm });
+      const payload = {
+        name: String(editForm.name || "").trim(),
+        category: String((editForm as any).category || "").trim(),
+        description: String(editForm.description || ""),
+        unit: String((editForm as any).unit || ""),
+        defaultDeliverables: Array.isArray((editForm as any).defaultDeliverables) ? (editForm as any).defaultDeliverables : [],
+        tags: Array.isArray((editForm as any).tags) ? (editForm as any).tags : [],
+        isActive: !!(editForm as any).isActive,
+      };
+      const { data } = await api.put(`/services/${editForm._id}`, payload);
       setItems((prev) => prev.map((sv) => (sv._id === data._id ? data : sv)));
       setEditOpen(false);
     } catch (e: any) {
@@ -140,6 +143,11 @@ export default function Services() {
     return () => { cancelled = true; };
   }, [ownerId]);
 
+  function formatDate(d?: string) {
+    if (!d) return "";
+    try { return new Date(d).toLocaleDateString(); } catch { return String(d); }
+  }
+
   return (
     <>
       <PageMeta title="Services & Rates" description="Manage services and pricing" />
@@ -156,94 +164,132 @@ export default function Services() {
             <Alert variant="error" title="Error" message={errorMessage} />
           )}
 
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] mt-6">
+            <div className="max-w-full overflow-x-auto">
+              <Table>
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                  <TableRow>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Category</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Description</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Unit</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Deliverables</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Tags</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Active</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Created</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Updated</TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  {items.length === 0 ? (
+                    <TableRow>
+                      <TableCell className="px-5 py-4 text-theme-sm text-gray-500 dark:text-gray-400">No services found.</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                      <TableCell>{""}</TableCell>
+                    </TableRow>
+                  ) : (
+                    items.map((s) => (
+                      <TableRow key={s._id}>
+                        <TableCell className="px-5 py-4 sm:px-6 text-start">
+                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">{s.name}</span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-gray-700 text-start text-theme-sm dark:text-gray-300">{(s as any).category || "—"}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{s.description || "—"}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(s as any).unit || "—"}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {(() => {
+                              const arr = (((s as any).defaultDeliverables as string[]) || []).filter(Boolean);
+                              const showAll = !!expandedDeliverables[s._id];
+                              const display = showAll ? arr : arr.slice(0, 3);
+                              return (
+                                <>
+                                  {display.map((d, i) => (
+                                    <Badge key={`${d}-${i}`} variant="light" color="primary" size="sm" startIcon={<FileIcon className="h-3 w-3" />}>{d}</Badge>
+                                  ))}
+                                  {arr.length > 3 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="px-2 py-1 text-theme-xs"
+                                      onClick={() => setExpandedDeliverables((prev) => ({ ...prev, [s._id]: !prev[s._id] }))}
+                                      type="button"
+                                    >
+                                      {showAll ? "Show less" : `+${arr.length - 3} more`}
+                                    </Button>
+                                  )}
+                                  {arr.length === 0 && (
+                                    <span className="text-theme-sm text-gray-500 dark:text-gray-400">—</span>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {(() => {
+                              const arr = (((s as any).tags as string[]) || []).filter(Boolean);
+                              const showAll = !!expandedTags[s._id];
+                              const display = showAll ? arr : arr.slice(0, 3);
+                              return (
+                                <>
+                                  {display.map((t, i) => (
+                                    <Badge key={`${t}-${i}`} variant="light" color="info" size="sm" startIcon={<ShootingStarIcon className="h-3 w-3" />}>{t}</Badge>
+                                  ))}
+                                  {arr.length > 3 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="px-2 py-1 text-theme-xs"
+                                      onClick={() => setExpandedTags((prev) => ({ ...prev, [s._id]: !prev[s._id] }))}
+                                      type="button"
+                                    >
+                                      {showAll ? "Show less" : `+${arr.length - 3} more`}
+                                    </Button>
+                                  )}
+                                  {arr.length === 0 && (
+                                    <span className="text-theme-sm text-gray-500 dark:text-gray-400">—</span>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{(s as any).isActive ? "Yes" : "No"}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{formatDate((s as any).createdAt)}</TableCell>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{formatDate((s as any).updatedAt)}</TableCell>
+                        <TableCell className="px-4 py-3 text-start">
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleViewService(s)}>
+                              <InfoIcon className="h-5 w-5" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleEditService(s)}>
+                              <PencilIcon className="h-5 w-5" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setDeleteTarget(s)}>
+                              <TrashBinIcon className="h-5 w-5 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
         {/* Horizontal Cards View */}
-        <div className="mt-6 space-y-4">
-          {items.map((s) => (
-            <div key={s._id} className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.05] dark:bg-white/[0.03]">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-theme-sm font-semibold text-gray-900 dark:text-white/90">{s.name}</span>
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-theme-xs text-gray-600 dark:bg-white/[0.06] dark:text-gray-300">
-                      {(s.status || "active").replace(/_/g, " ")}
-                    </span>
-                  </div>
-                  {s.description && (
-                    <p className="text-theme-sm text-gray-600 dark:text-gray-300">{s.description}</p>
-                  )}
-                  {Array.isArray(s.deliverables) && s.deliverables.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {s.deliverables.map((d, i) => (
-                        <span key={i} className="rounded-full bg-gray-100 px-2 py-0.5 text-theme-xs text-gray-700 dark:bg-white/[0.06] dark:text-gray-300">
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-2">
-                    <div className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Pricing Plans</div>
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {(s.pricing_plans || []).map((p, idx) => (
-                        <div key={idx} className="rounded border border-gray-200 p-3 text-theme-sm dark:border-white/[0.08]">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{p.plan_type || "Plan"}</span>
-                            <span className="text-theme-xs text-gray-500">{p.currency || ""}</span>
-                          </div>
-                          <div className="mt-1 text-gray-700 dark:text-gray-300">
-                            {p.is_price_range ? (
-                              <span>
-                                Range: {p.range?.min ?? "-"} - {p.range?.max ?? "-"}
-                              </span>
-                            ) : p.amount != null ? (
-                              <span>Amount: {p.amount}</span>
-                            ) : (
-                              <span className="text-gray-500">No amount</span>
-                            )}
-                          </div>
-                          {p.percentage != null && (
-                            <div className="text-gray-700 dark:text-gray-300">Percentage: {p.percentage}%</div>
-                          )}
-                          {p.pre_discounted_rate != null && (
-                            <div className="text-gray-700 dark:text-gray-300">Pre-discount: {p.pre_discounted_rate}</div>
-                          )}
-                          {p.notes && (
-                            <div className="mt-1 text-gray-600 dark:text-gray-300">{p.notes}</div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0 flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewService(s)}
-                  >
-                    <InfoIcon className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditService(s)}
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDeleteTarget(s)}
-                  >
-                    <TrashBinIcon className="h-5 w-5 text-red-600" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        
 
         {/* View Service Modal */}
         <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} className="max-w-[700px] m-4">
@@ -255,58 +301,46 @@ export default function Services() {
                   <Label>Name</Label>
                   <div className="text-sm text-gray-800 dark:text-gray-200">{selected.name}</div>
                 </div>
+                <div>
+                  <Label>Category</Label>
+                  <div className="text-sm text-gray-800 dark:text-gray-200">{(selected as any).category || "-"}</div>
+                </div>
                 {selected.description && (
                   <div>
                     <Label>Description</Label>
                     <div className="text-sm whitespace-pre-wrap text-gray-800 dark:text-gray-200">{selected.description}</div>
                   </div>
                 )}
-                {Array.isArray(selected.deliverables) && selected.deliverables.length > 0 && (
-                  <div>
-                    <Label>Deliverables</Label>
-                    <ul className="list-disc pl-5 text-sm text-gray-800 dark:text-gray-200">
-                      {selected.deliverables.map((d, i) => (
-                        <li key={i}>{d}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-sm">Status: <span className="font-medium">{selected.status || "-"}</span></div>
-                  <div className="text-sm">Negotiable: <span className="font-medium">{selected.is_negotiable ? "Yes" : "No"}</span></div>
-                  <div className="text-sm">Barter: <span className="font-medium">{selected.is_barter ? "Yes" : "No"}</span></div>
-                  <div className="text-sm">Contact for pricing: <span className="font-medium">{selected.is_contact_for_pricing ? "Yes" : "No"}</span></div>
+                <div>
+                  <Label>Unit</Label>
+                  <div className="text-sm text-gray-800 dark:text-gray-200">{(selected as any).unit || "-"}</div>
                 </div>
                 <div>
-                  <Label>Pricing Plans</Label>
-                  <div className="space-y-3">
-                    {(selected.pricing_plans || []).map((p, idx) => (
-                      <div key={idx} className="rounded border border-gray-200 dark:border-white/[0.08] p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium">{p.plan_type || "Plan"}</div>
-                          <div className="text-xs text-gray-500">{p.currency || ""}</div>
-                        </div>
-                        <div className="mt-2 text-sm">
-                          {p.is_price_range ? (
-                            <span>
-                              Range: {p.range?.min ?? "-"} - {p.range?.max ?? "-"}
-                            </span>
-                          ) : p.amount != null ? (
-                            <span>Amount: {p.amount}</span>
-                          ) : null}
-                        </div>
-                        {p.percentage != null && (
-                          <div className="text-sm">Percentage: {p.percentage}%</div>
-                        )}
-                        {p.pre_discounted_rate != null && (
-                          <div className="text-sm">Pre-discount rate: {p.pre_discounted_rate}</div>
-                        )}
-                        {p.notes && (
-                          <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{p.notes}</div>
-                        )}
-                      </div>
+                  <Label>Default Deliverables</Label>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {(((selected as any).defaultDeliverables as string[]) || []).filter(Boolean).map((d: string, i: number) => (
+                      <Badge key={`${d}-${i}`} variant="light" color="primary" size="sm" startIcon={<FileIcon className="h-3 w-3" />}>{d}</Badge>
                     ))}
+                    {(!Array.isArray((selected as any).defaultDeliverables) || ((selected as any).defaultDeliverables || []).length === 0) && (
+                      <span className="text-theme-sm text-gray-500 dark:text-gray-400">—</span>
+                    )}
                   </div>
+                </div>
+                <div>
+                  <Label>Tags</Label>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {(((selected as any).tags as string[]) || []).filter(Boolean).map((t: string, i: number) => (
+                      <Badge key={`${t}-${i}`} variant="light" color="info" size="sm" startIcon={<ShootingStarIcon className="h-3 w-3" />}>{t}</Badge>
+                    ))}
+                    {(!Array.isArray((selected as any).tags) || ((selected as any).tags || []).length === 0) && (
+                      <span className="text-theme-sm text-gray-500 dark:text-gray-400">—</span>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-sm">Active: <span className="font-medium">{(selected as any).isActive ? "Yes" : "No"}</span></div>
+                  <div className="text-sm">Created: <span className="font-medium">{formatDate((selected as any).createdAt)}</span></div>
+                  <div className="text-sm">Updated: <span className="font-medium">{formatDate((selected as any).updatedAt)}</span></div>
                 </div>
               </div>
             ) : null}
@@ -317,259 +351,72 @@ export default function Services() {
         </Modal>
 
         {/* Edit Service Modal */}
-        <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} isFullscreen>
-          <div className="p-6 space-y-5">
+        <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} className="max-w-[700px] m-4">
+          <div className="p-6 space-y-6">
             <h3 className="text-lg font-semibold">Edit service</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Name</Label>
                 <InputField
-                  value={editForm.name || ""}
+                  value={String(editForm.name || "")}
                   onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                 />
               </div>
               <div>
-                <Label>Status</Label>
-                <Select
-                  defaultValue={editForm.status || ""}
-                  onChange={(val) => setEditForm((f) => ({ ...f, status: val }))}
-                  options={[
-                    { label: "draft", value: "draft" },
-                    { label: "active", value: "active" },
-                    { label: "archived", value: "archived" },
-                  ]}
+                <Label>Category</Label>
+                <InputField
+                  value={String((editForm as any).category || "")}
+                  onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
                 />
               </div>
             </div>
             <div>
               <Label>Description</Label>
               <TextArea
-                value={editForm.description || ""}
+                value={String(editForm.description || "")}
                 onChange={(val) => setEditForm((f) => ({ ...f, description: val }))}
                 rows={4}
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <Checkbox
-                label="Negotiable"
-                checked={!!editForm.is_negotiable}
-                onChange={(checked) => setEditForm((f) => ({ ...f, is_negotiable: checked }))}
-              />
-              <Checkbox
-                label="Barter"
-                checked={!!editForm.is_barter}
-                onChange={(checked) => setEditForm((f) => ({ ...f, is_barter: checked }))}
-              />
-              <Checkbox
-                label="Contact for pricing"
-                checked={!!editForm.is_contact_for_pricing}
-                onChange={(checked) => setEditForm((f) => ({ ...f, is_contact_for_pricing: checked }))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Unit</Label>
+                <Select
+                  defaultValue={String((editForm as any).unit || "per_deliverable")}
+                  onChange={(val) => setEditForm((f) => ({ ...f, unit: val }))}
+                  options={[
+                    { label: "per_deliverable", value: "per_deliverable" },
+                    { label: "per_project", value: "per_project" },
+                    { label: "per_hour", value: "per_hour" },
+                  ]}
+                />
+              </div>
+              <div>
+                <Label>Active</Label>
+                <div className="mt-2">
+                  <Checkbox
+                    label="Service is active"
+                    checked={!!(editForm as any).isActive}
+                    onChange={(checked) => setEditForm((f) => ({ ...f, isActive: checked }))}
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label>Default Deliverables</Label>
+              <TagInput
+                values={(Array.isArray((editForm as any).defaultDeliverables) ? (editForm as any).defaultDeliverables : []) as string[]}
+                onChange={(vals) => setEditForm((f) => ({ ...f, defaultDeliverables: vals }))}
+                placeholder="Type and press Enter"
               />
             </div>
-
-            <div className="space-y-4">
-              <Label>Pricing Plans</Label>
-              {(editForm.pricing_plans || []).map((p: PricingPlan, idx: number) => (
-                <div key={idx} className="rounded border border-gray-200 dark:border-white/[0.08] p-4 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div>
-                      <Label>Plan Type</Label>
-                      <Select
-                        defaultValue={p.plan_type || ""}
-                        onChange={(val) => {
-                          setEditForm((f) => {
-                            const next = { ...(f || {}) };
-                            const arr = [...(next.pricing_plans || [])];
-                            arr[idx] = { ...(arr[idx] || {}), plan_type: val };
-                            next.pricing_plans = arr;
-                            return next;
-                          });
-                        }}
-                        options={[
-                          { label: "per_project", value: "per_project" },
-                          { label: "per_post", value: "per_post" },
-                          { label: "per_month", value: "per_month" },
-                          { label: "retainer", value: "retainer" },
-                          { label: "hourly", value: "hourly" },
-                        ]}
-                      />
-                    </div>
-                    <div>
-                      <Label>Currency</Label>
-                      <Select
-                        defaultValue={p.currency || ""}
-                        onChange={(val) => {
-                          setEditForm((f) => {
-                            const next = { ...(f || {}) };
-                            const arr = [...(next.pricing_plans || [])];
-                            arr[idx] = { ...(arr[idx] || {}), currency: val };
-                            next.pricing_plans = arr;
-                            return next;
-                          });
-                        }}
-                        options={["INR", "USD", "EUR", "GBP"].map((c) => ({ label: c, value: c }))}
-                      />
-                    </div>
-                    <Checkbox
-                      label="Price is a range"
-                      checked={!!p.is_price_range}
-                      onChange={(checked) => {
-                        setEditForm((f) => {
-                          const next = { ...(f || {}) };
-                          const arr = [...(next.pricing_plans || [])];
-                          arr[idx] = { ...(arr[idx] || {}), is_price_range: checked };
-                          next.pricing_plans = arr;
-                          return next;
-                        });
-                      }}
-                    />
-                  </div>
-
-                  {p.is_price_range ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Min</Label>
-                        <InputField
-                          type="number"
-                          value={p.range?.min ?? ""}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setEditForm((f) => {
-                              const next = { ...(f || {}) };
-                              const arr = [...(next.pricing_plans || [])];
-                              const range = { ...(arr[idx]?.range || {}) };
-                              range.min = isNaN(val) ? undefined : val;
-                              arr[idx] = { ...(arr[idx] || {}), range };
-                              next.pricing_plans = arr;
-                              return next;
-                            });
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <Label>Max</Label>
-                        <InputField
-                          type="number"
-                          value={p.range?.max ?? ""}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setEditForm((f) => {
-                              const next = { ...(f || {}) };
-                              const arr = [...(next.pricing_plans || [])];
-                              const range = { ...(arr[idx]?.range || {}) };
-                              range.max = isNaN(val) ? undefined : val;
-                              arr[idx] = { ...(arr[idx] || {}), range };
-                              next.pricing_plans = arr;
-                              return next;
-                            });
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Label>Amount</Label>
-                      <InputField
-                        type="number"
-                        value={p.amount ?? ""}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setEditForm((f) => {
-                            const next = { ...(f || {}) };
-                            const arr = [...(next.pricing_plans || [])];
-                            arr[idx] = { ...(arr[idx] || {}), amount: isNaN(val) ? undefined : val };
-                            next.pricing_plans = arr;
-                            return next;
-                          });
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <Label>Percentage</Label>
-                      <InputField
-                        type="number"
-                        value={p.percentage ?? ""}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setEditForm((f) => {
-                            const next = { ...(f || {}) };
-                            const arr = [...(next.pricing_plans || [])];
-                            arr[idx] = { ...(arr[idx] || {}), percentage: isNaN(val) ? undefined : val };
-                            next.pricing_plans = arr;
-                            return next;
-                          });
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label>Pre-discount rate</Label>
-                      <InputField
-                        type="number"
-                        value={p.pre_discounted_rate ?? ""}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setEditForm((f) => {
-                            const next = { ...(f || {}) };
-                            const arr = [...(next.pricing_plans || [])];
-                            arr[idx] = { ...(arr[idx] || {}), pre_discounted_rate: isNaN(val) ? undefined : val };
-                            next.pricing_plans = arr;
-                            return next;
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Notes</Label>
-                    <TextArea
-                      value={p.notes || ""}
-                      onChange={(val) => {
-                        setEditForm((f) => {
-                          const next = { ...(f || {}) };
-                          const arr = [...(next.pricing_plans || [])];
-                          arr[idx] = { ...(arr[idx] || {}), notes: val };
-                          next.pricing_plans = arr;
-                          return next;
-                        });
-                      }}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditForm((f) => {
-                          const next = { ...(f || {}) };
-                          const arr = [...(next.pricing_plans || [])];
-                          arr.splice(idx, 1);
-                          next.pricing_plans = arr;
-                          return next;
-                        });
-                      }}
-                    >
-                      Remove plan
-                    </Button>
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                variant="outline"
-                onClick={() =>
-                  setEditForm((f) => ({
-                    ...(f || {}),
-                    pricing_plans: [...(f?.pricing_plans || []), {} as PricingPlan],
-                  }))
-                }
-              >
-                Add plan
-              </Button>
+            <div>
+              <Label>Tags</Label>
+              <TagInput
+                values={(Array.isArray((editForm as any).tags) ? (editForm as any).tags : []) as string[]}
+                onChange={(vals) => setEditForm((f) => ({ ...f, tags: vals }))}
+                placeholder="Type and press Enter"
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

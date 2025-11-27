@@ -6,7 +6,7 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="INFLU - Sign In"
+        title="INFLU CRM"
         description="The Smarter Way to Manage Creators, Clients & Closures.”"
       />
       <AuthLayout>

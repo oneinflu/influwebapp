@@ -6,7 +6,7 @@ export default function BusinessInfo() {
   return (
     <>
       <PageMeta
-        title="Business Information | OneInflu"
+        title="INFLU CRM"
         description="Provide your business details to complete onboarding."
       />
       <AuthLayout>
@@ -25,4 +25,3 @@ export default function BusinessInfo() {
     </>
   );
 }
-

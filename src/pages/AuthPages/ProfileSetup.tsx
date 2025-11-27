@@ -6,7 +6,7 @@ export default function ProfileSetup() {
   return (
     <>
       <PageMeta
-        title="Profile Setup | TailAdmin"
+        title="INFLU CRM"
         description="Provide slug, display name, and date of birth to complete registration."
       />
       <AuthLayout>

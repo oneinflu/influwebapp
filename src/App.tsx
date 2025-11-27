@@ -23,9 +23,7 @@ import Leads from "./pages/Leads";
 import LeadsNew from "./pages/LeadsNew";
 import Services from "./pages/Services";
 import ServicesNew from "./pages/ServicesNew";
-import Projects from "./pages/Projects";
-import ProjectsNew from "./pages/ProjectsNew";
-import ProjectDetails from "./pages/ProjectDetails";
+
 import Portfolio from "./pages/Portfolio";
 import PortfolioNew from "./pages/PortfolioNew";
 import PortfolioEdit from "./pages/PortfolioEdit";
@@ -54,6 +52,10 @@ import RateCards from "./pages/RateCards";
 import RateCardsNew from "./pages/RateCardsNew";
 import Quotations from "./pages/Quotations";
 import QuotationsNew from "./pages/QuotationsNew";
+import ProjectsNew from "./pages/ProjectsNew";
+import Projects from "./pages/Projects";
+
+
 
 export default function App() {
   return (
@@ -82,9 +84,7 @@ export default function App() {
               <Route path="/leads/new" element={<LeadsNew />} />
               <Route path="/services" element={<Services />} />
               <Route path="/services/new" element={<ServicesNew />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/projects/new" element={<ProjectsNew />} />
-              <Route path="/projects/:id" element={<ProjectDetails />} />
+              
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/portfolio/new" element={<PortfolioNew />} />
               <Route path="/portfolio/:id/edit" element={<PortfolioEdit />} />
@@ -115,6 +115,8 @@ export default function App() {
               <Route path="/rate-cards/new" element={<RateCardsNew />} />
               <Route path="/quotations" element={<Quotations />} />
               <Route path="/quotations/new" element={<QuotationsNew />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/new" element={<ProjectsNew />} />
 
 
 

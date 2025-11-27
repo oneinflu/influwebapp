@@ -16,7 +16,7 @@ import Select from "../components/form/Select";
 import DeleteConfirm from "../components/ui/confirm/DeleteConfirm";
 import { PencilIcon, TrashBinIcon, InfoIcon } from "../icons";
 
-interface ClientItem {
+export interface ClientItem {
   _id: string;
   business_name: string;
   industry?: string;

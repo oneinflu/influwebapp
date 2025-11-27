@@ -92,7 +92,7 @@ export default function SearchSelect({
   return (
     <div className="w-full" ref={containerRef}>
       <div
-        className="relative z-50 inline-block w-full"
+        className="relative z-[1000] inline-block w-full"
         role="combobox"
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -116,7 +116,7 @@ export default function SearchSelect({
           <>
             {/* Overlay to prevent seeing/interaction with underlying inputs */}
             <div
-              className="fixed inset-0 z-40 bg-black/30"
+              className="fixed inset-0 z-[999] bg-black/30"
               onClick={() => {
                 setOpen(false);
                 setFocusedIndex(-1);
@@ -124,7 +124,7 @@ export default function SearchSelect({
               aria-hidden="true"
             />
             <div
-              className="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-900"
+              className="absolute left-0 top-full z-[1000] mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-900"
               role="listbox"
               aria-label={placeholder}
             >
@@ -149,9 +149,10 @@ export default function SearchSelect({
                     return (
                       <div
                         key={opt.value}
-                        className={`w-full cursor-pointer border-b border-gray-200 last:border-b-0 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/10 ${
+                        className={`w-full cursor-pointer border-b border-gray-200 last:border-b-0 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg:white/10 ${
                           isFocused ? "bg-gray-50 dark:bg-white/10" : ""
                         } ${isSelected ? "bg-gray-100 dark:bg-white/5" : ""}`}
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={() => selectValue(opt.value)}
                         role="option"
                         aria-selected={isSelected}

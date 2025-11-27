@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 
-interface ModalProps {
+interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
   isOpen: boolean;
   onClose: () => void;
   className?: string;
@@ -92,3 +92,4 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 };
+export default Modal;

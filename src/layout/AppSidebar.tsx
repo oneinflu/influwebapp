@@ -1,19 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-// Assume these icons are imported from an icon library
 import {
-  BoxCubeIcon,
-  ChevronDownIcon,
-  GridIcon,
-  HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
-} from "../icons";
+  LayoutGrid,
+  Users,
+  Handshake,
+  Briefcase,
+  FileText,
+  Folder,
+  ChevronDown,
+  MoreHorizontal,
+} from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 
@@ -26,17 +23,17 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <LayoutGrid />,
     name: "Dashboard",
     path: "/",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <Users />,
     name: "Clients",
     path: "/clients",
   },
   {
-    icon: <ListIcon />,
+    icon: <Users />,
     name: "Team Management",
     subItems: [
       { name: "Roles", path: "/roles" },
@@ -44,43 +41,43 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <PlugInIcon />,
+    icon: <Handshake />,
     name: "Collaborators",
     path: "/collaborators",
   },
   {
-    icon: <PlugInIcon />,
+    icon: <Briefcase />,
     name: "Services",
     path: "/services",
   },
   {
-    icon: <PlugInIcon />,
+    icon: <FileText />,
     name: "Rate Cards",
     path: "/rate-cards",
   },
  {
-    icon: <PageIcon />,
+    icon: <Folder />,
     name: "Portfolio",
     path: "/portfolio",
   },
   {
-    icon: <PieChartIcon />,
+    icon: <Users />,
     name: "Leads",
     path: "/leads",
   },
   {
-    icon: <BoxCubeIcon />,
+    icon: <FileText />,
     name: "Quotations",
     path: "/quotations",
   },
   {
-    icon: <BoxCubeIcon />,
+    icon: <Folder />,
     name: "Projects",
     path: "/projects",
   },
   
   {
-    icon: <TableIcon />,
+    icon: <FileText />,
     name: "Invoices",
     path: "/invoices",
   },
@@ -186,7 +183,7 @@ const AppSidebar: React.FC = () => {
                 <span className="menu-item-text">{nav.name}</span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
+                <ChevronDown
                   className={`ml-auto w-5 h-5 transition-transform duration-200 ${
                     openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
@@ -341,7 +338,7 @@ const AppSidebar: React.FC = () => {
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Menu"
                 ) : (
-                  <HorizontaLDots className="size-6" />
+                  <MoreHorizontal className="size-6" />
                 )}
               </h2>
               {renderMenuItems(navItems, "main")}

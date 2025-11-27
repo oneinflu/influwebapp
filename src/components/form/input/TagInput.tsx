@@ -79,7 +79,7 @@ const TagInput: FC<TagInputProps> = ({
     addTag(inputValue);
   }
 
-  const containerClasses = `flex min-h-11 w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-sm shadow-theme-xs flex-wrap dark:bg-gray-900 dark:text-white/90 ${disabled ? "bg-gray-100 border-gray-300 opacity-40 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700" : "bg-transparent text-gray-800 border-gray-300 focus-within:border-brand-300 focus-within:ring-3 focus-within:ring-brand-500/20 dark:border-gray-700"} ${className}`;
+  const containerClasses = `flex min-h-11 w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-sm shadow-theme-xs flex-wrap dark:bg-gray-900 dark:text-white/90 ${disabled ? "bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-700" : "bg-transparent text-gray-800 border-gray-300 focus-within:border-brand-300 focus-within:ring-3 focus-within:ring-brand-500/20 dark:border-gray-700"} ${className}`;
 
   return (
     <div className={containerClasses}>
@@ -93,7 +93,8 @@ const TagInput: FC<TagInputProps> = ({
             type="button"
             aria-label={`Remove ${tag}`}
             onClick={() => removeTag(idx)}
-            className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-brand-100 dark:hover:bg-brand-900/30"
+            disabled={disabled}
+            className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed dark:hover:bg-brand-900/30"
           >
             <CloseLineIcon className="h-3 w-3" />
           </button>

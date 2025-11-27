@@ -52,6 +52,8 @@ import ProfileSetup from "./pages/AuthPages/ProfileSetup";
 import BusinessInfo from "./pages/AuthPages/BusinessInfo";
 import RateCards from "./pages/RateCards";
 import RateCardsNew from "./pages/RateCardsNew";
+import Quotations from "./pages/Quotations";
+import QuotationsNew from "./pages/QuotationsNew";
 
 export default function App() {
   return (
@@ -111,6 +113,8 @@ export default function App() {
               <Route path="/videos" element={<Videos />} />
               <Route path="/rate-cards" element={<RateCards />} />
               <Route path="/rate-cards/new" element={<RateCardsNew />} />
+              <Route path="/quotations" element={<Quotations />} />
+              <Route path="/quotations/new" element={<QuotationsNew />} />
 
 
 

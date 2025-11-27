@@ -58,7 +58,11 @@ const navItems: NavItem[] = [
     name: "Rate Cards",
     path: "/rate-cards",
   },
- 
+ {
+    icon: <PageIcon />,
+    name: "Portfolio",
+    path: "/portfolio",
+  },
   {
     icon: <PieChartIcon />,
     name: "Leads",
@@ -66,14 +70,15 @@ const navItems: NavItem[] = [
   },
   {
     icon: <BoxCubeIcon />,
+    name: "Quotations",
+    path: "/quotations",
+  },
+  {
+    icon: <BoxCubeIcon />,
     name: "Projects",
     path: "/projects",
   },
-  {
-    icon: <PageIcon />,
-    name: "Portfolio",
-    path: "/portfolio",
-  },
+  
   {
     icon: <TableIcon />,
     name: "Invoices",

@@ -5,6 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Alert from "../ui/alert/Alert";
+import Select from "../form/Select";
 import { useAuth } from "../../context/AuthContext";
 import { useState } from "react";
 
@@ -31,7 +32,7 @@ export default function SignUpForm() {
           rel="noopener noreferrer"
         >
           <ChevronLeftIcon className="size-5" />
-          Back to dashboard
+          Back to Home
         </a>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
@@ -62,7 +63,11 @@ export default function SignUpForm() {
                     isChecked,
                     primaryRole
                   );
-                  navigate("/profile-setup");
+                  if (primaryRole === "agency" || primaryRole === "business") {
+                    navigate("/business-info");
+                  } else {
+                    navigate("/profile-setup");
+                  }
                 } catch (err: unknown) {
                   let msg = "Registration failed";
                   if (typeof err === "object" && err !== null) {
@@ -111,38 +116,21 @@ export default function SignUpForm() {
                   <Label>
                     What defines you <span className="text-error-500">*</span>
                   </Label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {[
-                      { label: "I run a brand promotion agency", value: "agency" },
-                      { label: "I am model", value: "model" },
-                      { label: "I run a business", value: "business" },
-                      {
-                        label: "I’m a manager who deals with influencers & brands",
-                        value: "manager",
-                      },
-                      { label: "I am a Content Creator", value: "influencer" },
-                    ].map((opt) => {
-                      const selected = primaryRole === opt.value;
-                      const base = "px-3 py-1 rounded-full border text-sm transition";
-                      const selectedClasses =
-                        " bg-brand-500 text-white border-brand-500 dark:bg-brand-500 dark:text-white dark:border-brand-500";
-                      const unselectedClasses =
-                        " bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-white/5 dark:text-white/80 dark:border-gray-700 dark:hover:bg-white/10";
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setPrimaryRole(opt.value as typeof primaryRole)}
-                          className={`${base}${selected ? selectedClasses : unselectedClasses}`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
+                  <div className="mt-2">
+                    <Select
+                      placeholder="Select your primary role"
+                      options={[
+                        { label: "I run a brand promotion agency", value: "agency" },
+                        { label: "I am model", value: "model" },
+                        { label: "I run a business", value: "business" },
+                        { label: "I’m a manager who deals with influencers & brands", value: "manager" },
+                        { label: "I am a Content Creator", value: "influencer" },
+                      ]}
+                      defaultValue={(primaryRole || "") as string}
+                      onChange={(v) => setPrimaryRole(v as "agency" | "model" | "business" | "manager" | "influencer")}
+                    />
                   </div>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    We only show the main roles here: agency, model, business, manager, influencer.
-                  </p>
+               
                 </div>
                 {/* Password */}
                 <div>

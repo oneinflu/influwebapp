@@ -10,6 +10,7 @@ import Badge from "../components/ui/badge/Badge.tsx";
 import api from "../utils/api.ts";
 import { useAuth } from "../context/AuthContext.tsx";
 import { useNavigate } from "react-router";
+import PermissionGate from "../components/common/PermissionGate.tsx";
 import DatePicker from "../components/form/date-picker.tsx";
 import { generateInvoicePdf } from "../utils/invoicePdf.ts";
 
@@ -177,6 +178,7 @@ export default function Invoices() {
       <PageMeta title="Invoices" description="Track invoices and payments" />
       <PageBreadcrumb pageTitle="Invoices" />
 
+      <PermissionGate group="invoices">
       <div className="space-y-6">
         <ComponentCard title="Invoices" desc="List and manage your invoices">
           <div className="flex flex-wrap items-center gap-3 justify-between">
@@ -307,6 +309,7 @@ export default function Invoices() {
           </div>
         </ComponentCard>
       </div>
+      </PermissionGate>
     </>
   );
 }

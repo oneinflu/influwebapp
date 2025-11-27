@@ -49,6 +49,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import ProfileSetup from "./pages/AuthPages/ProfileSetup";
+import BusinessInfo from "./pages/AuthPages/BusinessInfo";
 
 export default function App() {
   return (
@@ -118,6 +119,7 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
           {/* Onboarding - protected but outside dashboard layout */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/business-info" element={<BusinessInfo />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
           </Route>
 

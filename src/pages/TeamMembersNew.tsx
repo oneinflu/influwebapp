@@ -18,6 +18,7 @@ export default function TeamMembersNew() {
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const [password, setPassword] = useState<string>("123456");
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
   const [roleId, setRoleId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -48,6 +49,7 @@ export default function TeamMembersNew() {
         name: name.trim(),
         managed_by: ownerId,
         role: roleId,
+        password: password.trim(),
       };
       if (email.trim()) payload.email = email.trim().toLowerCase();
       if (phone.trim()) payload.phone = phone.trim();
@@ -97,6 +99,12 @@ export default function TeamMembersNew() {
               <div>
                 <Label>Phone</Label>
                 <Input placeholder="+91 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div>
+                <Label>
+                  Password <span className="text-gray-500 text-xs">(default 123456)</span>
+                </Label>
+                <Input type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <div>
                 <Label>

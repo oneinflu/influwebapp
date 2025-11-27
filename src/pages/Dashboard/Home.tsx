@@ -36,7 +36,7 @@ type CollaboratorDoc = {
   type?: string;
 };
 
-function formatCurrency(amount: number, currency = "USD") {
+function formatCurrency(amount: number, currency = "INR") {
   try {
     return new Intl.NumberFormat(undefined, {
       style: "currency",
@@ -44,7 +44,7 @@ function formatCurrency(amount: number, currency = "USD") {
       maximumFractionDigits: 0,
     }).format(amount);
   } catch {
-    return `$${amount.toFixed(0)}`;
+    return `₹${amount.toFixed(0)}`;
   }
 }
 
@@ -117,7 +117,7 @@ export default function Home() {
     return invoices.filter((inv) => inv.payment_status === "overdue").length;
   }, [invoices]);
 
-  const currencyLabel = useMemo(() => invoices[0]?.currency || "USD", [invoices]);
+  const currencyLabel = useMemo(() => invoices[0]?.currency || "INR", [invoices]);
 
  
  

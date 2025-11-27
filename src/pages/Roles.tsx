@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "../component
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
+import PermissionGate from "../components/common/PermissionGate";
 
 interface RoleItem {
   _id: string;
@@ -68,6 +69,7 @@ export default function Roles() {
     <>
       <PageMeta title="Roles" description="Manage roles and permissions" />
       <PageBreadcrumb pageTitle="Roles" />
+      <PermissionGate group="roles">
       <div className="space-y-6">
         <ComponentCard title="Roles">
           <div className="flex items-center justify-between">
@@ -139,6 +141,7 @@ export default function Roles() {
           </div>
         </ComponentCard>
       </div>
+      </PermissionGate>
     </>
   );
 }

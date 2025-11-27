@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ComponentCard from "../components/common/ComponentCard";
 import PageMeta from "../components/common/PageMeta";
@@ -6,6 +6,7 @@ import Label from "../components/form/Label";
 import Input from "../components/form/input/InputField";
 import TextArea from "../components/form/input/TextArea";
 import Select from "../components/form/Select";
+import SearchSelect from "../components/form/SearchSelect";
 import Button from "../components/ui/button/Button";
 import Alert from "../components/ui/alert/Alert";
 import PhoneInput from "../components/form/group-input/PhoneInput";
@@ -22,10 +23,50 @@ interface SocialHandleForm {
   handle: string;
 }
 
+const INDUSTRY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "Advertising & Marketing", label: "Advertising & Marketing" },
+  { value: "Agriculture", label: "Agriculture" },
+  { value: "Aerospace & Defense", label: "Aerospace & Defense" },
+  { value: "Automotive", label: "Automotive" },
+  { value: "Banking & Finance", label: "Banking & Finance" },
+  { value: "Biotechnology", label: "Biotechnology" },
+  { value: "Chemicals", label: "Chemicals" },
+  { value: "Construction", label: "Construction" },
+  { value: "Consumer Goods", label: "Consumer Goods" },
+  { value: "Education", label: "Education" },
+  { value: "Electronics", label: "Electronics" },
+  { value: "Energy & Utilities", label: "Energy & Utilities" },
+  { value: "Entertainment & Media", label: "Entertainment & Media" },
+  { value: "Food & Beverage", label: "Food & Beverage" },
+  { value: "Government", label: "Government" },
+  { value: "Healthcare", label: "Healthcare" },
+  { value: "Hospitality & Travel", label: "Hospitality & Travel" },
+  { value: "Insurance", label: "Insurance" },
+  { value: "IT & Software", label: "IT & Software" },
+  { value: "Jewelry & Accessories", label: "Jewelry & Accessories" },
+  { value: "Legal", label: "Legal" },
+  { value: "Logistics & Transportation", label: "Logistics & Transportation" },
+  { value: "Manufacturing", label: "Manufacturing" },
+  { value: "Mining & Metals", label: "Mining & Metals" },
+  { value: "Nonprofit", label: "Nonprofit" },
+  { value: "Pharmaceuticals", label: "Pharmaceuticals" },
+  { value: "Professional Services", label: "Professional Services" },
+  { value: "Real Estate", label: "Real Estate" },
+  { value: "Retail & E-commerce", label: "Retail & E-commerce" },
+  { value: "Sports & Recreation", label: "Sports & Recreation" },
+  { value: "Telecommunications", label: "Telecommunications" },
+  { value: "Textiles & Apparel", label: "Textiles & Apparel" },
+  { value: "Arts & Crafts", label: "Arts & Crafts" },
+  { value: "Home & Furniture", label: "Home & Furniture" },
+  { value: "Beauty & Personal Care", label: "Beauty & Personal Care" },
+  { value: "Other", label: "Other" },
+];
+
 export default function ClientsNew() {
   const navigate = useNavigate();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [businessName, setBusinessName] = useState<string>("");
   const [industry, setIndustry] = useState<string>("");
   const [type, setType] = useState<ClientType>("individual");
@@ -171,7 +212,11 @@ export default function ClientsNew() {
               </div>
               <div>
                 <Label>Industry</Label>
-                <Input placeholder="Retail, Tech, etc." value={industry} onChange={(e) => setIndustry(e.target.value)} />
+                <SearchSelect
+                  options={INDUSTRY_OPTIONS}
+                  defaultValue={industry}
+                  onChange={(v) => setIndustry(v)}
+                />
               </div>
               <div>
                 <Label>Type</Label>
@@ -206,11 +251,12 @@ export default function ClientsNew() {
                   </div>
                 )}
                 <input
+                  ref={fileInputRef}
                   id="logo-file-new"
                   type="file"
                   accept="image/*"
                   onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                  className="sr-only"
+                  className="hidden"
                 />
                 <div className="flex items-center justify-between rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5">
                   <div className="text-theme-xs text-gray-600 dark:text-gray-400">
@@ -218,11 +264,19 @@ export default function ClientsNew() {
                     <p>PNG/JPG up to 5MB. Square images look best.</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <label htmlFor="logo-file-new">
-                      <Button size="sm">Choose Image</Button>
-                    </label>
+                    <Button size="sm" type="button" onClick={() => fileInputRef.current?.click()}>Choose Image</Button>
                     {logoFile && (
-                      <Button size="sm" variant="outline" onClick={() => setLogoFile(null)}>Clear</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        onClick={() => {
+                          setLogoFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                      >
+                        Clear
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -338,19 +392,19 @@ export default function ClientsNew() {
                       <Input placeholder="@acme" value={h.handle} onChange={(e) => updateSocialHandle(idx, { handle: e.target.value })} />
                     </div>
                     <div>
-                      <Button size="sm" variant="outline" onClick={() => removeSocialHandle(idx)}>Remove</Button>
+                      <Button size="sm" variant="outline" type="button" onClick={() => removeSocialHandle(idx)}>Remove</Button>
                     </div>
                   </div>
                 ))}
-                <Button size="sm" onClick={addSocialHandle}>Add Social Handle</Button>
+                <Button size="sm" type="button" onClick={addSocialHandle}>Add Social Handle</Button>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <Button size="sm" disabled={loading || !businessName.trim() || !pocEmail.trim() || !pocName.trim()}>
+              <Button size="sm" type="submit" disabled={loading || !businessName.trim() || !pocEmail.trim() || !pocName.trim()}>
                 {loading ? "Creating..." : "Create Client"}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => navigate("/clients")}>Cancel</Button>
+              <Button size="sm" variant="outline" type="button" onClick={() => navigate("/clients")}>Cancel</Button>
             </div>
           </form>
         </ComponentCard>

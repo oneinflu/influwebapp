@@ -6,6 +6,7 @@ import Label from "../components/form/Label";
 import Input from "../components/form/input/InputField";
 import Button from "../components/ui/button/Button";
 import Alert from "../components/ui/alert/Alert";
+import PermissionGate from "../components/common/PermissionGate";
 
 type StatType = 'clients' | 'team_members' | 'projects' | 'years_in_business' | 'avg_rating';
 type StatsItem = { type: StatType; value: number };
@@ -363,6 +364,7 @@ export default function PublicProfileEdit() {
   }, [slug]);
 
   return (
+    <PermissionGate group="public_profile">
     <div className="p-6">
       <div className="mb-5 sm:mb-8">
         <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
@@ -572,5 +574,6 @@ export default function PublicProfileEdit() {
         </div>
       </form>
     </div>
+    </PermissionGate>
   );
 }

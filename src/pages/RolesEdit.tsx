@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import PermissionGate from "../components/common/PermissionGate";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ComponentCard from "../components/common/ComponentCard";
 import PageMeta from "../components/common/PageMeta";
@@ -101,6 +102,19 @@ export default function RolesEdit() {
     }));
   }
 
+  function setGroupPermissions(group: string, val: boolean) {
+    if (disabled) return;
+    setPerms((prev) => {
+      const current = prev[group] || {};
+      const targetGroup = groups.find((g) => g.group === group);
+      const nextGroup: Record<string, boolean> = { ...current };
+      for (const p of targetGroup?.permissions || []) {
+        nextGroup[p.key] = val;
+      }
+      return { ...prev, [group]: nextGroup };
+    });
+  }
+
   async function handleSubmit() {
     setErrorMessage("");
     if (!ownerId) {
@@ -153,8 +167,8 @@ export default function RolesEdit() {
   const disabled = role?.locked === true;
 
   return (
-    <>
-      <PageMeta title="Edit Role" description="Edit role details and permissions" />
+    <PermissionGate group="roles">
+      <PageMeta title="Edit Role" description="Update role permissions" />
       <PageBreadcrumb pageTitle="Edit Role" />
       <div className="space-y-6">
         <ComponentCard title={role ? `Edit: ${role.name}` : "Edit Role"} desc="Select public permissions to include in this role">
@@ -183,13 +197,27 @@ export default function RolesEdit() {
             </div>
 
             <div className="space-y-6">
-              {groups.map((g) => (
-                <div key={g._id} className="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
-                  <h4 className="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">{g.name}</h4>
-                  {g.description && (
-                    <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">{g.description}</p>
-                  )}
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {groups.map((g) => {
+                const allSelected = (g.permissions || []).every(
+                  (p) => !!(perms[g.group] && perms[g.group][p.key])
+                );
+                return (
+                  <div key={g._id} className="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-800 dark:text-white/90">{g.name}</h4>
+                        {g.description && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{g.description}</p>
+                        )}
+                      </div>
+                      <Checkbox
+                        label="Select all"
+                        checked={allSelected}
+                        onChange={(val) => setGroupPermissions(g.group, val)}
+                        disabled={disabled}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {(g.permissions || []).map((p) => (
                       <div key={p.key} className="flex items-start justify-between">
                         <div>
@@ -205,9 +233,10 @@ export default function RolesEdit() {
                         />
                       </div>
                     ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="flex items-center gap-3">
@@ -219,6 +248,6 @@ export default function RolesEdit() {
           </form>
         </ComponentCard>
       </div>
-    </>
+    </PermissionGate>
   );
 }

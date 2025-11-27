@@ -20,6 +20,7 @@ export default function TeamMembersEdit() {
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const [password, setPassword] = useState<string>("123456");
   const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
   const [roleId, setRoleId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -86,6 +87,7 @@ export default function TeamMembersEdit() {
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
         role: roleId || undefined,
+        password: password.trim(),
       };
       await api.put(`/team-members/${id}`, payload);
       navigate("/team/members");
@@ -132,15 +134,21 @@ export default function TeamMembersEdit() {
                   <Label>Email</Label>
                   <Input placeholder="name@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input placeholder="+91 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-                <div>
-                  <Label>
-                    Role <span className="text-error-500">*</span>
-                  </Label>
-                  <Select
+              <div>
+                <Label>Phone</Label>
+                <Input placeholder="+91 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div>
+                <Label>
+                  Password <span className="text-gray-500 text-xs">(default 123456)</span>
+                </Label>
+                <Input type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+              <div>
+                <Label>
+                  Role <span className="text-error-500">*</span>
+                </Label>
+                <Select
                     options={roles}
                     placeholder="Select role"
                     defaultValue={roleId}

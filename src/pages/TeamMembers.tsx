@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "../component
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
+import PermissionGate from "../components/common/PermissionGate";
 import DeleteConfirm from "../components/ui/confirm/DeleteConfirm";
 
 interface TeamMemberItem {
@@ -108,6 +109,7 @@ export default function TeamMembers() {
     <>
       <PageMeta title="Team Members" description="Manage your team" />
       <PageBreadcrumb pageTitle="Team Members" />
+      <PermissionGate group="team_members">
       <div className="space-y-6">
         <ComponentCard title="Team Members">
           <div className="flex items-center justify-between">
@@ -172,6 +174,7 @@ export default function TeamMembers() {
           </div>
         </ComponentCard>
       </div>
+      </PermissionGate>
 
       {/* Delete Confirm Modal */}
       <DeleteConfirm

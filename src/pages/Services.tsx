@@ -9,6 +9,7 @@ import Alert from "../components/ui/alert/Alert";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
+import PermissionGate from "../components/common/PermissionGate";
 import { Modal } from "../components/ui/modal";
 import Label from "../components/form/Label";
 import InputField from "../components/form/input/InputField";
@@ -143,6 +144,7 @@ export default function Services() {
     <>
       <PageMeta title="Services & Rates" description="Manage services and pricing" />
       <PageBreadcrumb pageTitle="Services & Rates" />
+      <PermissionGate group="services">
       <div className="space-y-6">
         <ComponentCard title="Services">
           <div className="flex items-center justify-between">
@@ -590,6 +592,7 @@ export default function Services() {
         />
         </ComponentCard>
       </div>
+      </PermissionGate>
     </>
   );
 }

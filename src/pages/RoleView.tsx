@@ -8,6 +8,7 @@ import Alert from "../components/ui/alert/Alert";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../components/ui/table";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import PermissionGate from "../components/common/PermissionGate";
 
 interface RoleDoc {
   _id: string;
@@ -74,7 +75,7 @@ export default function RoleView() {
   }, [id, ownerId]);
 
   return (
-    <>
+    <PermissionGate group="roles">
       <PageMeta title="Role Details" description="View role details" />
       <PageBreadcrumb pageTitle="Role Details" />
       <div className="space-y-6">
@@ -138,6 +139,6 @@ export default function RoleView() {
           )}
         </ComponentCard>
       </div>
-    </>
+    </PermissionGate>
   );
 }

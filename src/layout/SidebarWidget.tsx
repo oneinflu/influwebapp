@@ -13,19 +13,9 @@ export default function SidebarWidget() {
     const id = user?._id ? String(user._id) : undefined;
     return slug || (id ? id.slice(-6) : "");
   }, [user]);
+  const publicUrl = `https://oneinflu.com/profile/${profileSlug}`;
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
-  const hostNoPort = (() => {
-    try {
-      const u = new URL(origin);
-      return `${u.protocol}//${u.hostname}`;
-    } catch {
-      return "http://localhost";
-    }
-  })();
-  const publicUrl = `${hostNoPort}/${profileSlug}`;
-
-  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [, setCopied] = useState<"code" | "link" | null>(null);
 
   const copy = async (text: string, type: "code" | "link") => {
     try {
@@ -61,16 +51,7 @@ export default function SidebarWidget() {
       <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">Public Profile</h3>
       <p className="mb-4 text-gray-500 text-theme-sm dark:text-gray-400">Share your Profile to anyone</p>
 
-      <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
-        <code className="font-mono text-sm text-gray-900 dark:text-white">{profileSlug || "—"}</code>
-        <button
-          type="button"
-          className="px-2 py-1 text-xs font-medium rounded-md bg-brand-500 text-white hover:bg-brand-600"
-          onClick={() => copy(profileSlug || "", "code")}
-        >
-          {copied === "code" ? "Copied!" : "Copy"}
-        </button>
-      </div>
+     
 
       <div className="mt-3 break-all text-gray-600 text-theme-sm dark:text-gray-300">{publicUrl}</div>
 

@@ -129,8 +129,8 @@ export default function Invoices() {
       if (from) params.from = from;
       if (to) params.to = to;
       const [{ data: invData }, { data: clientsResp }] = await Promise.all([
-        api.get("/invoices", { params }),
-        api.get("/clients", { params: { user_id: ownerId } }),
+        api.get(`/invoices/user/${ownerId}`, { params }),
+        api.get(`/clients/user/${ownerId}`),
       ]);
       setItems(Array.isArray(invData) ? invData : []);
       const cmap: Record<string, string> = {};

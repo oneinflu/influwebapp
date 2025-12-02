@@ -66,7 +66,7 @@ export default function Leads() {
       setLoading(true);
       setErrorMessage("");
       try {
-        const { data } = await api.get("/leads", { params: { q: q.trim() || undefined } });
+        const { data } = await api.get(`/leads/user/${ownerId}`, { params: { q: q.trim() || undefined } });
         if (!cancelled) setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         if (cancelled) return;
@@ -96,8 +96,8 @@ export default function Leads() {
       if (!ownerId) return;
       try {
         const [{ data: svc }, { data: tm }] = await Promise.all([
-          api.get("/services", { params: { user_id: ownerId } }),
-          api.get("/team-members", { params: { managed_by: ownerId } }),
+          api.get(`/services/user/${ownerId}`),
+          api.get(`/team-members/user/${ownerId}`),
         ]);
         if (!cancelled) {
           const svcArr: Array<{ _id: string; name?: string }> = Array.isArray(svc) ? (svc as Array<{ _id: string; name?: string }>) : [];

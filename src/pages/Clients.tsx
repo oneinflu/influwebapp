@@ -96,7 +96,7 @@ export default function Clients() {
       setLoading(true);
       setErrorMessage("");
       try {
-        const { data } = await api.get("/clients", { params: { user_id: ownerId } });
+        const { data } = await api.get(`/clients/user/${ownerId}`);
         if (!cancelled) setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         if (cancelled) return;

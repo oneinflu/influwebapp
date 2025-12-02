@@ -58,10 +58,10 @@ export default function Portfolio() {
     setLoading(true);
     setErrorMessage("");
     try {
-      const params: Record<string, string> = { belongs_to: ownerId };
+      const params: Record<string, string> = {};
       if (q.trim()) params.q = q.trim();
       if (filterType) params.type = filterType;
-      const { data } = await api.get("/portfolios", { params });
+      const { data } = await api.get(`/portfolios/user/${ownerId}`, { params });
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       const message = ((): string => {

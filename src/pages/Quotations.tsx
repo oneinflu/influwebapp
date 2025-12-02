@@ -6,6 +6,7 @@ import Button from "../components/ui/button/Button";
 import Alert from "../components/ui/alert/Alert";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../components/ui/table";
 import api from "../utils/api";
+import { useAuth } from "../context/AuthContext";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Modal } from "../components/ui/modal/index";
@@ -55,6 +56,8 @@ function formatDate(d?: string) {
 
 export default function Quotations() {
   const navigate = useNavigate();
+  const { type, user } = useAuth();
+  const ownerId = useMemo(() => (type === "user" ? user?._id ?? null : null), [type, user]);
   const [items, setItems] = useState<QuotationItem[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -68,14 +71,15 @@ export default function Quotations() {
   useEffect(() => {
     let cancelled = false;
     async function fetchData() {
+      if (!ownerId) return;
       setLoading(true);
       setErrorMessage("");
       try {
         const [quotationsRes, clientsRes, servicesRes, rateCardsRes] = await Promise.all([
-          api.get("/quotations"),
-          api.get("/clients"),
-          api.get("/services"),
-          api.get("/rate-cards"),
+          api.get(`/quotations/user/${ownerId}`),
+          api.get(`/clients/user/${ownerId}`),
+          api.get(`/services/user/${ownerId}`),
+          api.get(`/rate-cards/user/${ownerId}`),
         ]);
         if (!cancelled) {
           setItems(Array.isArray(quotationsRes.data) ? quotationsRes.data : []);
@@ -103,7 +107,7 @@ export default function Quotations() {
     }
     fetchData();
     return () => { cancelled = true; };
-  }, []);
+  }, [ownerId]);
 
   const clientMap = useMemo(() => new Map(clients.map(c => [c._id, c.business_name])), [clients]);
   const serviceMap = useMemo(() => new Map(services.map(s => [s._id, s.name])), [services]);
@@ -396,4 +400,3 @@ export default function Quotations() {
     </>
   );
 }
-

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -64,7 +65,7 @@ export default function RateCards() {
     async function loadServices() {
       try {
         if (!ownerId) return;
-        const { data } = await api.get("/services", { params: { user_id: ownerId } });
+        const { data } = await api.get(`/services/user/${ownerId}`);
         const map: Record<string, string> = {};
         (Array.isArray(data) ? data : []).forEach((s: { _id?: string; name?: string }) => {
           if (s && s._id) map[String(s._id)] = String(s.name || s._id);
@@ -75,7 +76,7 @@ export default function RateCards() {
     async function loadCollaborators() {
       try {
         if (!ownerId) return;
-        const { data } = await api.get("/collaborators", { params: { managed_by: ownerId } });
+        const { data } = await api.get(`/collaborators/user/${ownerId}`);
         const opts: Array<{ _id: string; label: string }> = [];
         (Array.isArray(data) ? data : []).forEach((c: any) => {
           const id = String(c?._id || "");
@@ -96,7 +97,7 @@ export default function RateCards() {
   async function fetchRateCards() {
     setErrorMessage("");
     try {
-      const { data } = await api.get("/rate-cards");
+      const { data } = await api.get(ownerId ? `/rate-cards/user/${ownerId}` : "/rate-cards");
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       const message = ((): string => {
@@ -116,7 +117,7 @@ export default function RateCards() {
     }
   }
 
-  useEffect(() => { void fetchRateCards(); }, []);
+  useEffect(() => { void fetchRateCards(); }, [ownerId]);
 
   function formatDate(d?: string) {
     if (!d) return "";

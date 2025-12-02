@@ -40,7 +40,7 @@ export default function TeamMembers() {
       setLoading(true);
       setErrorMessage("");
       try {
-        const { data } = await api.get("/team-members", { params: { managed_by: ownerId } });
+        const { data } = await api.get(`/team-members/user/${ownerId}`);
         if (!cancelled) setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         if (cancelled) return;

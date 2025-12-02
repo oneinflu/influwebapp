@@ -176,7 +176,7 @@ export default function Collaborators() {
       setLoading(true);
       setErrorMessage("");
       try {
-        const { data } = await api.get("/collaborators", { params: { managed_by: ownerId } });
+        const { data } = await api.get(`/collaborators/user/${ownerId}`);
         if (!cancelled) setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         if (cancelled) return;

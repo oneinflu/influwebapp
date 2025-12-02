@@ -230,7 +230,7 @@ export default function PublicProfileEdit() {
         setCtaEmailAddress(u?.profile?.ctaEmailAddress || "");
 
         let p = await api
-          .get<PublicProfileDoc[]>("/public-profiles", { params: { ownerRef: userId } })
+          .get<PublicProfileDoc[]>("/public-profiles", { params: { owner_ref: userId } })
           .then(r => r.data);
         if (!Array.isArray(p) || p.length === 0) {
           p = await api
@@ -239,6 +239,9 @@ export default function PublicProfileEdit() {
         }
         const current = Array.isArray(p) && p.length > 0 ? p[0] : null;
         setPublicProfileId(current?._id ? String(current._id) : null);
+        const curObj0 = (current ?? {}) as Record<string, unknown>;
+        const curSlug = typeof curObj0.slug === 'string' ? (curObj0.slug as string) : undefined;
+        if (curSlug && curSlug.trim()) setSlug(curSlug.trim());
         setCoverPhoto(current?.cover_photo || "");
         // Normalize server stats (object with known fields) into typed items for UI
         const serverStatsArr = Array.isArray(current?.stats) ? (current!.stats as unknown[]) : [];
@@ -255,8 +258,19 @@ export default function PublicProfileEdit() {
           }
         }
         setStats(normalized);
-        setPublishedServices(Array.isArray(current?.published_services) ? current!.published_services! : []);
-        setPublishedProjects(Array.isArray(current?.published_projects) ? current!.published_projects! : []);
+        const curObj = (current ?? {}) as Record<string, unknown>;
+        const servicesSectionRaw = (curObj.servicesSection && typeof curObj.servicesSection === 'object') ? (curObj.servicesSection as Record<string, unknown>) : {};
+        const portfolioSectionRaw = (curObj.portfolioSection && typeof curObj.portfolioSection === 'object') ? (curObj.portfolioSection as Record<string, unknown>) : {};
+        const collaboratorsSectionRaw = (curObj.collaboratorsSection && typeof curObj.collaboratorsSection === 'object') ? (curObj.collaboratorsSection as Record<string, unknown>) : {};
+        const brandsSectionRaw = (curObj.brandsSection && typeof curObj.brandsSection === 'object') ? (curObj.brandsSection as Record<string, unknown>) : {};
+        const ctaSectionRaw = (curObj.ctaSection && typeof curObj.ctaSection === 'object') ? (curObj.ctaSection as Record<string, unknown>) : {};
+        const linksSectionRaw = (curObj.linksSection && typeof curObj.linksSection === 'object') ? (curObj.linksSection as Record<string, unknown>) : {};
+
+        const topPublishedServices = Array.isArray(curObj.published_services) ? (curObj.published_services as unknown[]) : [];
+        const nestedPublishedServices = Array.isArray((servicesSectionRaw as Record<string, unknown>).published_services) ? ((servicesSectionRaw as Record<string, unknown>).published_services as unknown[]) : [];
+        setPublishedServices((nestedPublishedServices.length > 0 ? nestedPublishedServices : topPublishedServices).map((x) => String(x)));
+        const topPublishedProjects = Array.isArray(curObj.published_projects) ? (curObj.published_projects as unknown[]) : [];
+        setPublishedProjects(topPublishedProjects.map((x) => String(x)));
 
         // Fetch active services and projects for selection
         let list: ServiceItem[] = [];
@@ -269,13 +283,13 @@ export default function PublicProfileEdit() {
         }
 
         const extras = (current as unknown as PublicProfileExtras) || {};
-        const enabled = extras?.services_section_enabled;
+        const enabled = servicesSectionRaw?.services_section_enabled ?? extras?.services_section_enabled;
         setServicesSectionEnabled(enabled === undefined ? true : !!enabled);
-        const title = String(extras?.services_section_title || "");
+        const title = String((servicesSectionRaw?.services_section_title ?? extras?.services_section_title) || "");
         setServicesSectionTitle(title.trim() ? title : "Our Services");
-        const subtitle = String(extras?.services_section_subtitle || "");
+        const subtitle = String((servicesSectionRaw?.services_section_subtitle ?? extras?.services_section_subtitle) || "");
         setServicesSectionSubtitle(subtitle.trim() ? subtitle : "Explore service cards with starting prices and quick actions.");
-        const serverDisplay = extras?.display_services;
+        const serverDisplay = (servicesSectionRaw as Record<string, unknown>)?.display_services ?? extras?.display_services;
         if (Array.isArray(serverDisplay) && serverDisplay.length > 0) {
           const normalized: DisplayService[] = serverDisplay.map((ds: DisplayServiceServerItem) => {
             const sid = String(ds?.service_id || ds?.serviceId || "");
@@ -290,7 +304,10 @@ export default function PublicProfileEdit() {
           });
           setDisplayServices(normalized);
         } else {
-          const normalized: DisplayService[] = (Array.isArray(current?.published_services) ? current!.published_services! : [])
+          const pub = Array.isArray((servicesSectionRaw as Record<string, unknown>)?.published_services)
+            ? (((servicesSectionRaw as Record<string, unknown>).published_services as unknown[]) ?? [])
+            : (Array.isArray(curObj.published_services) ? (curObj.published_services as unknown[]) : []);
+          const normalized: DisplayService[] = pub
             .map((sid) => {
               const svc = list.find((s: ServiceItem) => s._id === sid);
               return {
@@ -312,13 +329,15 @@ export default function PublicProfileEdit() {
           setPortfolioList([]);
         }
 
-        const showcase = Array.isArray(extras?.showcase_media) ? extras!.showcase_media! : [];
+        const showcase = Array.isArray((portfolioSectionRaw as Record<string, unknown>)?.showcase_media)
+          ? (((portfolioSectionRaw as Record<string, unknown>).showcase_media as unknown[]) ?? [])
+          : (Array.isArray(extras?.showcase_media) ? extras!.showcase_media! : []);
         setDisplayPortfolio(showcase.map((id) => ({ itemId: String(id), display: true })));
-        const ptEnabled = extras?.portfolio_section_enabled;
+        const ptEnabled = portfolioSectionRaw?.portfolio_section_enabled ?? extras?.portfolio_section_enabled;
         setPortfolioSectionEnabled(ptEnabled === undefined ? true : !!ptEnabled);
-        const ptTitle = String(extras?.portfolio_section_title || "");
+        const ptTitle = String((portfolioSectionRaw?.portfolio_section_title ?? extras?.portfolio_section_title) || "");
         setPortfolioSectionTitle(ptTitle.trim() ? ptTitle : "Our Portfolio Works");
-        const ptSubtitle = String(extras?.portfolio_section_subtitle || "");
+        const ptSubtitle = String((portfolioSectionRaw?.portfolio_section_subtitle ?? extras?.portfolio_section_subtitle) || "");
         setPortfolioSectionSubtitle(ptSubtitle.trim() ? ptSubtitle : "Selected media from recent work");
 
         let cbList: CollaboratorItem[] = [];
@@ -329,42 +348,62 @@ export default function PublicProfileEdit() {
         } catch {
           setCollaboratorList([]);
         }
-        const cEnabled = (extras as unknown as { collaborators_section_enabled?: boolean })?.collaborators_section_enabled;
+        const cEnabled = (collaboratorsSectionRaw?.collaborators_section_enabled ?? (extras as unknown as { collaborators_section_enabled?: boolean })?.collaborators_section_enabled);
         setCollaboratorsSectionEnabled(cEnabled === undefined ? true : !!cEnabled);
-        const cTitle = String((extras as unknown as { collaborators_section_title?: string })?.collaborators_section_title || "");
+        const cTitle = String((collaboratorsSectionRaw?.collaborators_section_title ?? (extras as unknown as { collaborators_section_title?: string })?.collaborators_section_title) || "");
         setCollaboratorsSectionTitle(cTitle.trim() ? cTitle : "Our Team & Collaborators");
-        const cSubtitle = String((extras as unknown as { collaborators_section_subtitle?: string })?.collaborators_section_subtitle || "");
+        const cSubtitle = String((collaboratorsSectionRaw?.collaborators_section_subtitle ?? (extras as unknown as { collaborators_section_subtitle?: string })?.collaborators_section_subtitle) || "");
         setCollaboratorsSectionSubtitle(cSubtitle.trim() ? cSubtitle : "Explore team cards with starting prices and quick actions.");
-        const publishedCollabs = (extras as unknown as { published_collaborators?: string[] })?.published_collaborators;
+        const publishedCollabs = ((collaboratorsSectionRaw as Record<string, unknown>)?.published_collaborators ?? (extras as unknown as { published_collaborators?: string[] })?.published_collaborators);
         const collabIds = Array.isArray(publishedCollabs) ? publishedCollabs : [];
         setDisplayCollaborators(collabIds.map((id) => ({ itemId: String(id), display: true })));
 
-        const bEnabled = (extras as unknown as { brands_section_enabled?: boolean })?.brands_section_enabled;
+        const bEnabled = (brandsSectionRaw?.brands_section_enabled ?? (extras as unknown as { brands_section_enabled?: boolean })?.brands_section_enabled);
         setBrandsSectionEnabled(bEnabled === undefined ? true : !!bEnabled);
-        const bTitle = String((extras as unknown as { brands_section_title?: string })?.brands_section_title || "");
+        const bTitle = String((brandsSectionRaw?.brands_section_title ?? (extras as unknown as { brands_section_title?: string })?.brands_section_title) || "");
         setBrandsSectionTitle(bTitle.trim() ? bTitle : "Our Brands");
-        const bSubtitle = String((extras as unknown as { brands_section_subtitle?: string })?.brands_section_subtitle || "");
+        const bSubtitle = String((brandsSectionRaw?.brands_section_subtitle ?? (extras as unknown as { brands_section_subtitle?: string })?.brands_section_subtitle) || "");
         setBrandsSectionSubtitle(bSubtitle.trim() ? bSubtitle : "Brands we’ve worked with");
-        const bImages = (extras as unknown as { brand_images?: string[] })?.brand_images;
-        setBrandImages(Array.isArray(bImages) ? bImages.filter((u) => typeof u === 'string' && u.trim()) : []);
+        const bImages = ((brandsSectionRaw as Record<string, unknown>)?.brand_images ?? (extras as unknown as { brand_images?: string[] })?.brand_images);
+        setBrandImages(Array.isArray(bImages) ? bImages.map((u) => String(u).replace(/`/g,'').trim()).filter((u) => u) : []);
 
-        const ctaEnabled = (extras as unknown as { cta_section_enabled?: boolean })?.cta_section_enabled;
+        const ctaEnabled = (ctaSectionRaw?.cta_section_enabled ?? (extras as unknown as { cta_section_enabled?: boolean })?.cta_section_enabled);
         setCtaSectionEnabled(ctaEnabled === undefined ? true : !!ctaEnabled);
-        const ctaT = String((extras as unknown as { cta_section_title?: string })?.cta_section_title || "");
+        const ctaT = String((ctaSectionRaw?.cta_section_title ?? (extras as unknown as { cta_section_title?: string })?.cta_section_title) || "");
         setCtaTitle(ctaT.trim() ? ctaT : "Get in touch");
-        const ctaS = String((extras as unknown as { cta_section_subtext?: string })?.cta_section_subtext || "");
+        const ctaS = String((ctaSectionRaw?.cta_section_subtext ?? (extras as unknown as { cta_section_subtext?: string })?.cta_section_subtext) || "");
         setCtaSubText(ctaS.trim() ? ctaS : "Let’s talk about your project and how we can help.");
-        const ctaBL = String((extras as unknown as { cta_button_label?: string })?.cta_button_label || "");
+        const ctaBL = String((ctaSectionRaw?.cta_button_label ?? (extras as unknown as { cta_button_label?: string })?.cta_button_label) || "");
         setCtaButtonLabel(ctaBL.trim() ? ctaBL : "Contact Us");
 
-        const tEnabled = (extras as unknown as { terms_enabled?: boolean })?.terms_enabled;
+        const tEnabled = (linksSectionRaw?.terms_enabled ?? (extras as unknown as { terms_enabled?: boolean })?.terms_enabled);
         setTermsEnabled(tEnabled === undefined ? true : !!tEnabled);
-        const pEnabled = (extras as unknown as { privacy_enabled?: boolean })?.privacy_enabled;
+        const pEnabled = (linksSectionRaw?.privacy_enabled ?? (extras as unknown as { privacy_enabled?: boolean })?.privacy_enabled);
         setPrivacyEnabled(pEnabled === undefined ? true : !!pEnabled);
-        const tText = String((extras as unknown as { terms_text?: string })?.terms_text || "");
+        const tText = String((linksSectionRaw?.terms_text ?? (extras as unknown as { terms_text?: string })?.terms_text) || "");
         setTermsText(tText.trim() ? tText : defaultTerms);
-        const pText = String((extras as unknown as { privacy_text?: string })?.privacy_text || "");
+        const pText = String((linksSectionRaw?.privacy_text ?? (extras as unknown as { privacy_text?: string })?.privacy_text) || "");
         setPrivacyText(pText.trim() ? pText : defaultPrivacy);
+
+        // Prefer public profile basic data if present
+        const pprofRaw = curObj.profile;
+        const pprof = (pprofRaw && typeof pprofRaw === 'object') ? (pprofRaw as Record<string, unknown>) : {};
+        if (pprof && Object.keys(pprof).length > 0) {
+          setShortBio(String((pprof.shortBio as string) || ""));
+          setTitle(String((pprof.title as string) || ""));
+          setSubtitle(String((pprof.subtitle as string) || ""));
+          setRole(String((pprof.role as string) || ""));
+          setLocationAddress(String((pprof.locationAddress as string) || ""));
+          setWebsiteUrl(String((pprof.websiteUrl as string) || ""));
+          const handles2 = Array.isArray(pprof.socialHandles) ? (pprof.socialHandles as SocialHandle[]) : [];
+          setSocialHandles(handles2);
+          setCtaPhoneEnabled(!!(pprof.ctaPhoneEnabled as boolean));
+          setCtaPhoneLabel(String((pprof.ctaPhoneLabel as string) || ""));
+          setCtaPhoneNumber(String((pprof.ctaPhoneNumber as string) || ""));
+          setCtaEmailEnabled(!!(pprof.ctaEmailEnabled as boolean));
+          setCtaEmailLabel(String((pprof.ctaEmailLabel as string) || ""));
+          setCtaEmailAddress(String((pprof.ctaEmailAddress as string) || ""));
+        }
 
       } catch (err) {
         const msg = ((): string => {
@@ -504,10 +543,8 @@ export default function PublicProfileEdit() {
     setSuccess("");
     try {
       if (!userId) throw new Error("Missing user id");
-      if (!slugValid || slugStatus !== 'available') {
-        throw new Error('Please choose an available slug');
-      }
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
 
       // Convert typed stats back to server schema
       const statsObj: { clients: number; team_members: number; projects: number; years_in_business: string; avg_rating: number } = {
@@ -533,7 +570,6 @@ export default function PublicProfileEdit() {
         : [];
 
       await api.put(`/public-profiles/${id}`, {
-        slug: slug.trim().toLowerCase(),
         cover_photo: coverPhoto.trim(),
         bio: shortBio.trim(),
         stats: serverStatsPayload,
@@ -569,6 +605,16 @@ export default function PublicProfileEdit() {
   async function ensurePublicProfile(): Promise<string> {
     if (!userId) throw new Error("Missing user id");
     if (publicProfileId && publicProfileId.trim()) return publicProfileId;
+    let list = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { owner_ref: userId } }).then(r => r.data).catch(() => []);
+    if (!Array.isArray(list) || list.length === 0) {
+      list = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { user_id: userId } }).then(r => r.data).catch(() => []);
+    }
+    const existing = Array.isArray(list) && list.length > 0 ? list[0] : null;
+    if (existing && existing._id) {
+      const id = String(existing._id);
+      setPublicProfileId(id);
+      return id;
+    }
     const createPayload: Record<string, unknown> = {
       ownerRef: userId,
       slug: slug.trim().toLowerCase(),
@@ -586,10 +632,13 @@ export default function PublicProfileEdit() {
       setPublicProfileId(newId);
       return newId;
     }
-    const list = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { ownerRef: userId } }).then(r => r.data);
-    const existing = Array.isArray(list) && list.length > 0 ? list[0] : null;
-    if (existing && existing._id) {
-      const id = String(existing._id);
+    let list2 = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { owner_ref: userId } }).then(r => r.data).catch(() => []);
+    if (!Array.isArray(list2) || list2.length === 0) {
+      list2 = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { user_id: userId } }).then(r => r.data).catch(() => []);
+    }
+    const existing2 = Array.isArray(list2) && list2.length > 0 ? list2[0] : null;
+    if (existing2 && existing2._id) {
+      const id = String(existing2._id);
       setPublicProfileId(id);
       return id;
     }
@@ -604,6 +653,7 @@ export default function PublicProfileEdit() {
       setApiError("");
       setSuccess("");
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, { slug: slug.trim().toLowerCase() });
       setSuccess("Public URL saved");
     } catch (err) {
@@ -632,25 +682,28 @@ export default function PublicProfileEdit() {
       setApiError("");
       setSuccess("");
       const payload = {
-        profile_title: title.trim(),
-        profile_subtitle: subtitle.trim(),
-        profile_role: role || undefined,
-        profile_locationAddress: locationAddress.trim() || undefined,
-        profile_websiteUrl: websiteUrl.trim() || undefined,
-        profile_socialHandles: socialHandles.filter(h => (h.platform || h.url)).map(h => ({
-          platform: (h.platform || '').trim(),
-          url: (h.url || '').trim()
-        })),
-        cta_phone_enabled: ctaPhoneEnabled,
-        cta_phone_label: ctaPhoneLabel.trim() || undefined,
-        cta_phone_number: ctaPhoneNumber.trim() || undefined,
-        cta_email_enabled: ctaEmailEnabled,
-        cta_email_label: ctaEmailLabel.trim() || undefined,
-        cta_email_address: ctaEmailAddress.trim() || undefined,
-        bio: shortBio.trim(),
+        profile: {
+          shortBio: shortBio.trim(),
+          title: title.trim(),
+          subtitle: subtitle.trim(),
+          role: role || undefined,
+          locationAddress: locationAddress.trim() || undefined,
+          websiteUrl: websiteUrl.trim() || undefined,
+          socialHandles: socialHandles.filter(h => (h.platform || h.url)).map(h => ({
+            platform: (h.platform || '').trim(),
+            url: (h.url || '').trim()
+          })),
+          ctaPhoneEnabled: ctaPhoneEnabled,
+          ctaPhoneLabel: ctaPhoneLabel.trim() || undefined,
+          ctaPhoneNumber: ctaPhoneNumber.trim() || undefined,
+          ctaEmailEnabled: ctaEmailEnabled,
+          ctaEmailLabel: ctaEmailLabel.trim() || undefined,
+          ctaEmailAddress: ctaEmailAddress.trim() || undefined,
+        }
       };
       console.log("Basic Data payload", payload);
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, payload);
       setSuccess("Basic data saved");
     } catch (err) {
@@ -702,21 +755,24 @@ export default function PublicProfileEdit() {
       setApiError("");
       setSuccess("");
       const payload = {
-        services_section_enabled: servicesSectionEnabled,
-        services_section_title: servicesSectionTitle.trim(),
-        services_section_subtitle: servicesSectionSubtitle.trim(),
-        display_services: displayServices.map((d) => ({
-          service_id: d.serviceId,
-          description: String(d.description || ""),
-          starting_price: String(d.startingPrice || ""),
-          show_price: !!d.showPrice,
-        })),
-        published_services: displayServices.map((d) => d.serviceId).filter(Boolean),
+        servicesSection: {
+          services_section_enabled: servicesSectionEnabled,
+          services_section_title: servicesSectionTitle.trim(),
+          services_section_subtitle: servicesSectionSubtitle.trim(),
+          display_services: displayServices.map((d) => ({
+            service_id: d.serviceId,
+            description: String(d.description || ""),
+            starting_price: String(d.startingPrice || ""),
+            show_price: !!d.showPrice,
+          })),
+          published_services: displayServices.map((d) => d.serviceId).filter(Boolean),
+        }
       };
       console.log("Services payload", payload);
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, payload);
-      setPublishedServices(payload.published_services);
+      setPublishedServices(payload.servicesSection.published_services);
       setSuccess("Services section saved");
     } catch (err) {
       const msg = ((): string => {
@@ -807,13 +863,16 @@ export default function PublicProfileEdit() {
       setSuccess("");
       const selectedIds = displayPortfolio.filter((d) => d.display && d.itemId).map((d) => d.itemId);
       const payload = {
-        portfolio_section_enabled: portfolioSectionEnabled,
-        portfolio_section_title: portfolioSectionTitle.trim(),
-        portfolio_section_subtitle: portfolioSectionSubtitle.trim(),
-        showcase_media: selectedIds,
+        portfolioSection: {
+          portfolio_section_enabled: portfolioSectionEnabled,
+          portfolio_section_title: portfolioSectionTitle.trim(),
+          portfolio_section_subtitle: portfolioSectionSubtitle.trim(),
+          showcase_media: selectedIds,
+        }
       };
       console.log("Portfolio payload", payload);
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, payload);
       setSuccess("Portfolio section saved");
     } catch (err) {
@@ -842,13 +901,16 @@ export default function PublicProfileEdit() {
       setApiError("");
       setSuccess("");
       const payload = {
-        cta_section_enabled: ctaSectionEnabled,
-        cta_section_title: ctaTitle.trim(),
-        cta_section_subtext: ctaSubText.trim(),
-        cta_button_label: ctaButtonLabel.trim(),
+        ctaSection: {
+          cta_section_enabled: ctaSectionEnabled,
+          cta_section_title: ctaTitle.trim(),
+          cta_section_subtext: ctaSubText.trim(),
+          cta_button_label: ctaButtonLabel.trim(),
+        }
       };
       console.log("Call To Action payload", payload);
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, payload);
       setSuccess("CTA section saved");
     } catch (err) {
@@ -877,13 +939,16 @@ export default function PublicProfileEdit() {
       setApiError("");
       setSuccess("");
       const payload = {
-        terms_enabled: termsEnabled,
-        privacy_enabled: privacyEnabled,
-        terms_text: termsText.trim(),
-        privacy_text: privacyText.trim(),
+        linksSection: {
+          terms_enabled: termsEnabled,
+          privacy_enabled: privacyEnabled,
+          terms_text: termsText.trim(),
+          privacy_text: privacyText.trim(),
+        }
       };
       console.log("Important Links payload", payload);
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, payload);
       setSuccess("Important links saved");
     } catch (err) {
@@ -951,13 +1016,16 @@ export default function PublicProfileEdit() {
       setApiError("");
       setSuccess("");
       const payload = {
-        brands_section_enabled: brandsSectionEnabled,
-        brands_section_title: brandsSectionTitle.trim(),
-        brands_section_subtitle: brandsSectionSubtitle.trim(),
-        brand_images: brandImages,
+        brandsSection: {
+          brands_section_enabled: brandsSectionEnabled,
+          brands_section_title: brandsSectionTitle.trim(),
+          brands_section_subtitle: brandsSectionSubtitle.trim(),
+          brand_images: brandImages,
+        }
       };
       console.log("Brands payload", payload);
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, payload);
       setSuccess("Brands section saved");
     } catch (err) {
@@ -1032,13 +1100,16 @@ export default function PublicProfileEdit() {
       setSuccess("");
       const selectedIds = displayCollaborators.filter((d) => d.display && d.itemId).map((d) => d.itemId);
       const payload = {
-        collaborators_section_enabled: collaboratorsSectionEnabled,
-        collaborators_section_title: collaboratorsSectionTitle.trim(),
-        collaborators_section_subtitle: collaboratorsSectionSubtitle.trim(),
-        published_collaborators: selectedIds,
+        collaboratorsSection: {
+          collaborators_section_enabled: collaboratorsSectionEnabled,
+          collaborators_section_title: collaboratorsSectionTitle.trim(),
+          collaborators_section_subtitle: collaboratorsSectionSubtitle.trim(),
+          published_collaborators: selectedIds,
+        }
       };
       console.log("Collaborators payload", payload);
       const id = await ensurePublicProfile();
+      console.log("PublicProfile id", id);
       await api.put(`/public-profiles/${id}`, payload);
       setSuccess("Collaborators section saved");
     } catch (err) {

@@ -119,7 +119,7 @@ export default function Services() {
       setLoading(true);
       setErrorMessage("");
       try {
-        const { data } = await api.get(`/services/user/${ownerId}`);
+        const { data } = await api.get("/services", { params: { user_id: ownerId } });
         if (!cancelled) setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         if (cancelled) return;

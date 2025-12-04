@@ -60,7 +60,7 @@ export default function Projects() {
         const [{ data: projects }, { data: clients }, { data: services }] = await Promise.all([
           ownerId ? api.get(`/projects/user/${ownerId}`) : api.get("/projects"),
           ownerId ? api.get(`/clients/user/${ownerId}`) : api.get("/clients"),
-          ownerId ? api.get(`/services/user/${ownerId}`) : api.get("/services"),
+          ownerId ? api.get(`/services`, { params: { user_id: ownerId } }) : api.get("/services"),
         ]);
         if (!cancelled) {
           setItems(Array.isArray(projects) ? projects : []);

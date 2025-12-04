@@ -96,7 +96,7 @@ export default function Leads() {
       if (!ownerId) return;
       try {
         const [{ data: svc }, { data: tm }] = await Promise.all([
-          api.get(`/services/user/${ownerId}`),
+          api.get(`/services`, { params: { user_id: ownerId } }),
           api.get(`/team-members/user/${ownerId}`),
         ]);
         if (!cancelled) {

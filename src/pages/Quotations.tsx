@@ -78,7 +78,7 @@ export default function Quotations() {
         const [quotationsRes, clientsRes, servicesRes, rateCardsRes] = await Promise.all([
           api.get(`/quotations/user/${ownerId}`),
           api.get(`/clients/user/${ownerId}`),
-          api.get(`/services/user/${ownerId}`),
+          api.get(`/services`, { params: { user_id: ownerId } }),
           api.get(`/rate-cards/user/${ownerId}`),
         ]);
         if (!cancelled) {

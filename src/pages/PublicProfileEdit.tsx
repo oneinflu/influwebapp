@@ -107,13 +107,13 @@ export default function PublicProfileEdit() {
   const slugTimer = useRef<number | null>(null);
 
   const [shortBio, setShortBio] = useState<string>("");
-  const [coverPhoto, setCoverPhoto] = useState<string>("");
+  const [, setCoverPhoto] = useState<string>("");
   const [avatar, setAvatar] = useState<string>("");
-  const [stats, setStats] = useState<StatsItem[]>([]);
+  const [, setStats] = useState<StatsItem[]>([]);
   const [socialHandles, setSocialHandles] = useState<SocialHandle[]>([]);
   
-  const [publishedServices, setPublishedServices] = useState<string[]>([]);
-  const [publishedProjects, setPublishedProjects] = useState<string[]>([]);
+  const [, setPublishedServices] = useState<string[]>([]);
+  const [, setPublishedProjects] = useState<string[]>([]);
 
   const [title, setTitle] = useState<string>("");
   const [subtitle, setSubtitle] = useState<string>("");
@@ -128,12 +128,10 @@ export default function PublicProfileEdit() {
   const [ctaEmailAddress, setCtaEmailAddress] = useState<string>("");
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [, setSaving] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [savingSlug, setSavingSlug] = useState<boolean>(false);
   const [savingBasic, setSavingBasic] = useState<boolean>(false);
-
   const [publicProfileId, setPublicProfileId] = useState<string | null>(null);
   const [servicesList, setServicesList] = useState<ServiceItem[]>([]);
   const [servicesSectionEnabled, setServicesSectionEnabled] = useState<boolean>(true);
@@ -210,6 +208,16 @@ export default function PublicProfileEdit() {
       setSuccess("");
       try {
         const u = await api.get<UserResponse>(`/users/${userId}`).then(r => r.data);
+        const urec = u as unknown as Record<string, unknown>;
+        const pObj = (typeof urec['profile'] === 'object' && urec['profile'] !== null)
+          ? (urec['profile'] as Record<string, unknown>)
+          : undefined;
+        let upid0: unknown = urec['public_profile_id'];
+        if (!upid0) upid0 = urec['publicProfileId'];
+        if (!upid0 && pObj) upid0 = pObj['public_profile_id'];
+        if (!upid0 && pObj) upid0 = pObj['publicProfileId'];
+        const publicIdFromUser = (typeof upid0 === 'string' && upid0.trim()) ? upid0.trim() : "";
+        if (publicIdFromUser) setPublicProfileId(publicIdFromUser);
         const initialSlug = u?.profile?.slug || "";
         setSlug(initialSlug);
         setShortBio(u?.profile?.shortBio || "");
@@ -229,16 +237,26 @@ export default function PublicProfileEdit() {
         setCtaEmailLabel(u?.profile?.ctaEmailLabel || "");
         setCtaEmailAddress(u?.profile?.ctaEmailAddress || "");
 
-        let p = await api
-          .get<PublicProfileDoc[]>("/public-profiles", { params: { owner_ref: userId } })
-          .then(r => r.data);
-        if (!Array.isArray(p) || p.length === 0) {
-          p = await api
-            .get<PublicProfileDoc[]>("/public-profiles", { params: { user_id: userId } })
-            .then(r => r.data);
+        let current: PublicProfileDoc | null = null;
+        const idToUse = publicIdFromUser || (publicProfileId ?? "");
+        if (idToUse) {
+          current = await api.get<PublicProfileDoc>(`/public-profiles/${idToUse}`).then(r => r.data).catch(() => null);
+        } else {
+          const created: unknown = await api.post("/public-profiles", { ownerRef: userId }).then(r => r.data).catch(() => null);
+          let newId = "";
+          if (created && typeof created === 'object') {
+            const objR = created as Record<string, unknown>;
+            const idA = objR['_id'];
+            const idB = objR['id'];
+            if (typeof idA === 'string' && idA.trim()) newId = idA.trim();
+            else if (typeof idB === 'string' && idB.trim()) newId = (idB as string).trim();
+          }
+          if (newId) {
+            setPublicProfileId(newId);
+            current = await api.get<PublicProfileDoc>(`/public-profiles/${newId}`).then(r => r.data).catch(() => null);
+          }
         }
-        const current = Array.isArray(p) && p.length > 0 ? p[0] : null;
-        setPublicProfileId(current?._id ? String(current._id) : null);
+        if (current && current._id) setPublicProfileId(String(current._id));
         const curObj0 = (current ?? {}) as Record<string, unknown>;
         const curSlug = typeof curObj0.slug === 'string' ? (curObj0.slug as string) : undefined;
         if (curSlug && curSlug.trim()) setSlug(curSlug.trim());
@@ -536,66 +554,7 @@ export default function PublicProfileEdit() {
 
   // Upload cover helper
  
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setApiError("");
-    setSuccess("");
-    try {
-      if (!userId) throw new Error("Missing user id");
-      const id = await ensurePublicProfile();
-      console.log("PublicProfile id", id);
-
-      // Convert typed stats back to server schema
-      const statsObj: { clients: number; team_members: number; projects: number; years_in_business: string; avg_rating: number } = {
-        clients: 0,
-        team_members: 0,
-        projects: 0,
-        years_in_business: '',
-        avg_rating: 0,
-      };
-      stats.forEach((it) => {
-        const val = Number(it.value) || 0;
-        switch (it.type) {
-          case 'clients': statsObj.clients = val; break;
-          case 'team_members': statsObj.team_members = val; break;
-          case 'projects': statsObj.projects = val; break;
-          case 'years_in_business': statsObj.years_in_business = String(val); break;
-          case 'avg_rating': statsObj.avg_rating = val; break;
-          default: break;
-        }
-      });
-      const serverStatsPayload = (statsObj.clients || statsObj.team_members || statsObj.projects || statsObj.avg_rating || statsObj.years_in_business)
-        ? [statsObj]
-        : [];
-
-      await api.put(`/public-profiles/${id}`, {
-        cover_photo: coverPhoto.trim(),
-        bio: shortBio.trim(),
-        stats: serverStatsPayload,
-        published_services: publishedServices,
-        published_projects: publishedProjects,
-      });
-
-      setSuccess("Profile updated successfully");
-    } catch (err) {
-      const msg = ((): string => {
-        if (err && typeof err === 'object') {
-          const anyErr = err as { response?: { data?: unknown }, message?: string };
-          const respData = anyErr.response?.data;
-          if (respData && typeof respData === 'object' && 'error' in respData) {
-            const emsg = (respData as { error?: unknown }).error;
-            if (typeof emsg === 'string' && emsg.trim()) return emsg;
-          }
-          if (typeof anyErr.message === 'string') return anyErr.message;
-        }
-        return 'Failed to save changes.';
-      })();
-      setApiError(msg);
-    } finally {
-      setSaving(false);
-    }
-  }
+ 
 
   const publicLink = useMemo(() => {
     const s = slug.trim().toLowerCase();
@@ -605,42 +564,32 @@ export default function PublicProfileEdit() {
   async function ensurePublicProfile(): Promise<string> {
     if (!userId) throw new Error("Missing user id");
     if (publicProfileId && publicProfileId.trim()) return publicProfileId;
-    let list = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { owner_ref: userId } }).then(r => r.data).catch(() => []);
-    if (!Array.isArray(list) || list.length === 0) {
-      list = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { user_id: userId } }).then(r => r.data).catch(() => []);
+    const u = await api.get<UserResponse>(`/users/${userId}`).then(r => r.data).catch(() => null);
+    if (u) {
+      const rec = u as unknown as Record<string, unknown>;
+      const pObj = (typeof rec['profile'] === 'object' && rec['profile'] !== null) ? (rec['profile'] as Record<string, unknown>) : undefined;
+      let upid: unknown = rec['public_profile_id'];
+      if (!upid) upid = rec['publicProfileId'];
+      if (!upid && pObj) upid = pObj['public_profile_id'];
+      if (!upid && pObj) upid = pObj['publicProfileId'];
+      if (typeof upid === 'string' && upid.trim()) {
+        const id = upid.trim();
+        setPublicProfileId(id);
+        return id;
+      }
     }
-    const existing = Array.isArray(list) && list.length > 0 ? list[0] : null;
-    if (existing && existing._id) {
-      const id = String(existing._id);
-      setPublicProfileId(id);
-      return id;
-    }
-    const createPayload: Record<string, unknown> = {
-      ownerRef: userId,
-      slug: slug.trim().toLowerCase(),
-    };
-    const created: unknown = await api.post("/public-profiles", createPayload).then(r => r.data).catch(() => null);
+    const created: unknown = await api.post("/public-profiles", { ownerRef: userId }).then(r => r.data).catch(() => null);
     let newId = "";
     if (created && typeof created === 'object') {
-      const obj = created as Record<string, unknown>;
-      const idA = obj && obj._id;
-      const idB = obj && obj.id;
+      const objR = created as Record<string, unknown>;
+      const idA = objR['_id'];
+      const idB = objR['id'];
       if (typeof idA === 'string' && idA.trim()) newId = idA.trim();
       else if (typeof idB === 'string' && idB.trim()) newId = (idB as string).trim();
     }
     if (newId) {
       setPublicProfileId(newId);
       return newId;
-    }
-    let list2 = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { owner_ref: userId } }).then(r => r.data).catch(() => []);
-    if (!Array.isArray(list2) || list2.length === 0) {
-      list2 = await api.get<PublicProfileDoc[]>("/public-profiles", { params: { user_id: userId } }).then(r => r.data).catch(() => []);
-    }
-    const existing2 = Array.isArray(list2) && list2.length > 0 ? list2[0] : null;
-    if (existing2 && existing2._id) {
-      const id = String(existing2._id);
-      setPublicProfileId(id);
-      return id;
     }
     throw new Error("Unable to create public profile");
   }
@@ -1151,7 +1100,7 @@ export default function PublicProfileEdit() {
         <div className="max-w-xl mb-3"><Alert variant="success" title="Saved" message={success} /></div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-6 max-w">
+      <form onSubmit={(e) => { e.preventDefault(); }} className="space-y-6 max-w">
         {/* Slug */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white/90">Public URL</h2>

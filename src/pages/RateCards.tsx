@@ -65,7 +65,7 @@ export default function RateCards() {
     async function loadServices() {
       try {
         if (!ownerId) return;
-        const { data } = await api.get(`/services/user/${ownerId}`);
+        const { data } = await api.get("/services", { params: { user_id: ownerId } });
         const map: Record<string, string> = {};
         (Array.isArray(data) ? data : []).forEach((s: { _id?: string; name?: string }) => {
           if (s && s._id) map[String(s._id)] = String(s.name || s._id);

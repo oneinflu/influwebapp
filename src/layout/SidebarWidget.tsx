@@ -1,18 +1,24 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
 
 type ShareData = { title?: string; text?: string; url?: string };
 type NavigatorWithShare = Navigator & { share?: (data: ShareData) => Promise<void> };
 
 export default function SidebarWidget() {
   const { user } = useAuth();
+  const [publicSlug, setPublicSlug] = useState<string>("");
 
   const profileSlug = useMemo(() => {
     const prof = user?.profile as Record<string, unknown> | undefined;
-    const slug = prof && typeof prof["slug"] === "string" ? (prof["slug"] as string) : undefined;
-    const id = user?._id ? String(user._id) : undefined;
-    return slug || (id ? id.slice(-6) : "");
-  }, [user]);
+    const fallback = (() => {
+      const s = prof && typeof prof["slug"] === "string" ? (prof["slug"] as string) : "";
+      if (s && s.trim()) return s.trim();
+      const id = user?._id ? String(user._id) : "";
+      return id ? id.slice(-6) : "";
+    })();
+    return publicSlug || fallback;
+  }, [user, publicSlug]);
   const publicUrl = `https://oneinflu.com/profile/${profileSlug}`;
 
   const [, setCopied] = useState<"code" | "link" | null>(null);
@@ -45,6 +51,32 @@ export default function SidebarWidget() {
     }
     copy(publicUrl, "link");
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSlug() {
+      const id = user?._id ? String(user._id) : "";
+      if (!id) return;
+      const rec = user as unknown as Record<string, unknown>;
+      const pObj = (typeof rec["profile"] === "object" && rec["profile"] !== null) ? (rec["profile"] as Record<string, unknown>) : undefined;
+      let upid: unknown = rec["public_profile_id"];
+      if (!upid) upid = rec["publicProfileId"];
+      if (!upid && pObj) upid = pObj["public_profile_id"];
+      if (!upid && pObj) upid = pObj["publicProfileId"];
+      const docId = (typeof upid === "string" && upid.trim()) ? upid.trim() : "";
+      if (!docId) return;
+      try {
+        const raw = await api.get(`/public-profiles/${docId}`).then(r => r.data).catch(() => null);
+        const d = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : undefined;
+        const s0 = d && typeof d["slug"] === "string" ? (d["slug"] as string) : "";
+        if (!cancelled) setPublicSlug(s0 || "");
+      } catch {
+        void 0;
+      }
+    }
+    loadSlug();
+    return () => { cancelled = true; };
+  }, [user]);
 
   return (
     <div className="mx-auto mb-10 w-full max-w-60 rounded-2xl bg-gray-50 px-4 py-5 text-center dark:bg-white/[0.03]">
